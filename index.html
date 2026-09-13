@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memoria Fotográfica · San José Obrero</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F6F63">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="San José Obrero">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --paper:#F6F1E4;
+    --ink:#2B2118;
+    --wood:#8A5A2B;
+    --ochre:#C98A2B;
+    --teal:#1F6F63;
+    --teal-dark:#154D44;
+    --line:#DCD2B8;
+    --muted:#8C8172;
+    --danger:#B24C3C;
+    --card:#FFFFFF;
+    font-family: ui-sans-serif, "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  h1,h2,h3{font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif; margin:0;}
+  button{font-family:inherit;cursor:pointer;}
+  input{font-family:inherit;}
+
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* ---------- Splash ---------- */
+  #splash{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:32px 24px;background:
+      radial-gradient(circle at 30% 20%, #FBF7EC 0%, var(--paper) 55%);
+  }
+  #splash .badge{width:132px;height:132px;margin-bottom:22px;}
+  #splash h1{font-size:2.4rem;color:var(--ink);letter-spacing:0.01em;}
+  #splash p.sub{margin-top:10px;color:var(--wood);font-size:1.02rem;max-width:420px;}
+  #splash p.org{margin-top:26px;color:var(--muted);font-size:0.85rem;letter-spacing:0.02em;}
+  #splash button{
+    margin-top:34px;background:var(--teal);color:#fff;border:none;border-radius:3px;
+    padding:14px 34px;font-size:1rem;font-weight:600;letter-spacing:0.01em;
+    box-shadow:0 2px 0 var(--teal-dark);
+  }
+  #splash button:active{transform:translateY(2px);box-shadow:none;}
+  .splash-choices{display:flex;flex-direction:column;gap:12px;margin-top:34px;width:100%;max-width:340px;}
+  .choice-btn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:16px 20px;}
+  .choice-btn span{font-weight:400;font-size:0.78rem;opacity:0.85;}
+  .choice-alt{background:var(--wood);box-shadow:0 2px 0 #5C3A17;}
+
+  /* ---------- Header (main app) ---------- */
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+  .top .mini-badge{width:44px;height:44px;flex:none;}
+  .top h2{font-size:1.35rem;}
+  .top .org{font-size:0.8rem;color:var(--muted);margin-top:2px;}
+  hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0;}
+
+  .field-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
+  .field-row label{font-weight:600;font-size:0.95rem;}
+  .field-row input[type=date]{
+    border:1px solid var(--line);background:var(--card);padding:9px 12px;border-radius:3px;font-size:0.95rem;color:var(--ink);
+  }
+
+  .progress-wrap{margin:18px 0 26px;}
+  .progress-track{height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--teal);transition:width .3s ease;}
+  .progress-label{font-size:0.8rem;color:var(--muted);margin-top:6px;}
+
+  /* ---------- Groups & slots ---------- */
+  .group{margin-bottom:30px;}
+  .group h3{font-size:1.05rem;color:var(--wood);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px;}
+  .slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+
+  .slot{
+    position:relative;border:1.5px dashed var(--line);border-radius:5px;background:var(--card);
+    aspect-ratio: 4/3; overflow:hidden; display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:border-color .15s ease;
+  }
+  .slot:hover{border-color:var(--ochre);}
+  .slot.filled{border-style:solid;border-color:var(--teal);}
+  .slot img{width:100%;height:100%;object-fit:cover;display:block;}
+  .slot .placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);padding:8px;text-align:center;}
+  .slot .placeholder .num{font-family:"Courier New",monospace;font-size:0.75rem;color:var(--ochre);font-weight:700;}
+  .slot .placeholder .lbl{font-size:0.78rem;line-height:1.25;}
+  .slot .tag{
+    position:absolute;bottom:0;left:0;right:0;background:rgba(43,33,24,0.72);color:#fff;
+    font-size:0.68rem;padding:3px 6px;text-align:center;
+  }
+  .slot .remove{
+    position:absolute;top:5px;right:5px;background:rgba(43,33,24,0.75);color:#fff;border:none;
+    width:22px;height:22px;border-radius:50%;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+    z-index:3;
+  }
+  .slot input[type=file]{
+    position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;
+  }
+
+  .actions-bar{
+    background:var(--paper);
+    padding:18px 0 6px;margin-top:18px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center;
+  }
+  .btn{border:none;border-radius:3px;padding:12px 22px;font-size:0.92rem;font-weight:600;}
+  .btn-primary{background:var(--teal);color:#fff;box-shadow:0 2px 0 var(--teal-dark);}
+  .btn-primary:disabled{background:#B9C9C5;box-shadow:none;cursor:not-allowed;}
+  .btn-primary.choice-alt, #splash button.choice-alt{background:var(--wood);box-shadow:0 2px 0 #5C3A17;}
+  .btn-primary.choice-solicitud, #splash button.choice-solicitud{background:#5B6E8C;box-shadow:0 2px 0 #3F4E66;}
+  .btn-ghost{background:transparent;color:var(--wood);border:1px solid var(--line);}
+
+  /* ---------- Report preview ---------- */
+  #reportSection{display:none;margin-top:46px;}
+  .report-card{
+    background:#fff;border:1px solid var(--line);border-radius:4px;padding:34px 30px;max-width:820px;margin:0 auto;
+  }
+  .report-head{display:flex;align-items:center;gap:16px;}
+  .report-head img.logo{width:56px;height:auto;flex:none;}
+  .report-head .headtext{flex:1;}
+  .report-head h2{font-size:1.35rem;text-align:left;}
+  .report-head .legal{text-align:left;font-size:0.78rem;color:var(--muted);margin-top:6px;}
+  .report-head .title2{text-align:center;font-weight:700;margin-top:16px;font-size:1.05rem;letter-spacing:0.02em;}
+  .report-meta{display:flex;justify-content:space-between;align-items:flex-start;margin-top:14px;font-size:0.85rem;gap:12px;flex-wrap:wrap;}
+  .report-meta .fecha{font-weight:700;text-align:right;}
+  .report-grid{margin-top:26px;display:flex;flex-direction:column;gap:22px;}
+  .report-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .report-pair.full{grid-template-columns:1fr;}
+  .report-pair.full .report-photo .box{aspect-ratio:16/9;}
+  .report-photo .lbl{font-weight:700;font-size:0.82rem;text-align:center;margin-bottom:8px;}
+  .report-photo .box{
+    border:1px solid var(--line);background:#F2EEE2;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .report-photo .box img{width:100%;height:100%;object-fit:contain;background:#fff;}
+  .report-photo .box .empty{color:var(--muted);font-size:0.78rem;}
+
+  .result-actions{max-width:820px;margin:26px auto 0;display:flex;flex-wrap:wrap;gap:10px;}
+  .result-actions .btn{flex:1 1 auto;min-width:150px;}
+  .btn-drive{background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .btn-onedrive{background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .note{font-size:0.78rem;color:var(--muted);max-width:820px;margin:14px auto 0;text-align:center;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #reportSection, #reportSection *{visibility:visible;}
+    #reportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
+    #donReportSection, #donReportSection *{visibility:visible;}
+    #donReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
+    #solReportSection, #solReportSection *{visibility:visible;}
+    #solReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
+    .result-actions,.note{display:none !important;}
+    .report-card{border:none;box-shadow:none;max-width:100%;}
+    .report-pair{break-inside:avoid;}
+  }
+  .back-link{display:inline-block;margin-bottom:14px;color:var(--wood);font-size:0.85rem;text-decoration:none;font-weight:600;}
+  .back-link:hover{text-decoration:underline;}
+
+  /* ---------- Donation form ---------- */
+  .book-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0 28px;}
+  .book-card{
+    border:1.5px solid var(--line);border-radius:5px;background:var(--card);padding:16px;cursor:pointer;text-align:left;
+  }
+  .book-card:hover{border-color:var(--ochre);}
+  .book-card.selected{border-color:var(--teal);border-width:2px;background:#F0F7F5;}
+  .book-card .kg{font-family:"Courier New",monospace;font-weight:700;color:var(--ochre);font-size:1.3rem;}
+  .book-card .desc{font-size:0.82rem;color:var(--muted);margin-top:4px;}
+
+  .roster-table{width:100%;border-collapse:collapse;margin-top:8px;}
+  .roster-table th{text-align:left;font-size:0.78rem;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);}
+  .roster-table td{padding:6px 8px;border-bottom:1px solid var(--line);}
+  .roster-table input[type=text]{width:100%;border:1px solid var(--line);border-radius:3px;padding:7px 9px;font-size:0.9rem;background:#fff;}
+  .roster-table input[type=number]{width:76px;border:1px solid var(--line);border-radius:3px;padding:7px 9px;font-size:0.9rem;background:#fff;}
+  .roster-table .rm-row{background:transparent;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;}
+  .roster-summary{display:flex;gap:26px;flex-wrap:wrap;margin-top:14px;font-size:0.9rem;}
+  .roster-summary strong{color:var(--teal-dark);}
+  .add-row-btn{margin-top:12px;background:transparent;border:1px dashed var(--wood);color:var(--wood);border-radius:3px;padding:9px 16px;font-size:0.85rem;font-weight:600;}
+
+  .donation-field{margin-bottom:16px;}
+  .donation-field label{display:block;font-weight:600;font-size:0.9rem;margin-bottom:6px;}
+  .donation-field input[type=date], .donation-field input[type=text], .donation-field input[type=number]{
+    border:1px solid var(--line);background:var(--card);padding:9px 12px;border-radius:3px;font-size:0.95rem;color:var(--ink);width:100%;max-width:320px;
+  }
+
+  /* ---------- Donation report preview ---------- */
+  .don-report{font-size:0.86rem;line-height:1.5;}
+  .don-report .dhead{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:10px;}
+  .don-report .dhead img{width:52px;height:auto;flex:none;}
+  .don-report .dhead .t1{font-weight:700;font-size:1.1rem;text-align:center;flex:1;}
+  .don-report .dhead2{text-align:center;font-size:0.72rem;color:var(--muted);margin-top:4px;}
+  .don-report .dtitle{text-align:center;font-weight:700;font-size:1rem;margin-top:10px;letter-spacing:0.02em;}
+  .don-report .dinfo{margin-top:14px;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:0.85rem;}
+  .don-report .dinfo .k{font-weight:700;}
+  .don-report table.dtable{width:100%;border-collapse:collapse;margin-top:16px;font-size:0.82rem;}
+  .don-report table.dtable th{border:1px solid var(--ink);background:#F2EEE2;padding:6px;font-size:0.76rem;}
+  .don-report table.dtable td{border:1px solid var(--ink);padding:5px 8px;}
+  .don-report table.dtable td.totalcell{text-align:center;font-weight:700;vertical-align:middle;}
+  .don-report .dq{font-weight:700;margin-top:16px;font-size:0.85rem;}
+  .don-report .dtext{font-size:0.8rem;margin-top:6px;text-align:justify;}
+  .don-report .dfirma{margin-top:50px;text-align:center;}
+  .don-report .dfirma .line{border-top:1px solid var(--ink);width:260px;margin:0 auto;padding-top:4px;font-size:0.8rem;}
+
+  /* ---------- Solicitud form ---------- */
+  .tipo-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0 28px;}
+  .tipo-card{
+    border:1.5px solid var(--line);border-radius:5px;background:var(--card);padding:16px;cursor:pointer;text-align:left;
+  }
+  .tipo-card:hover{border-color:var(--ochre);}
+  .tipo-card.selected{border-color:var(--teal);border-width:2px;background:#F0F7F5;}
+  .tipo-card.disabled{cursor:not-allowed;opacity:0.55;}
+  .tipo-card .ttitle{font-weight:700;color:var(--ink);font-size:1rem;}
+  .tipo-card .desc{font-size:0.8rem;color:var(--muted);margin-top:4px;}
+
+  .blank-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.85rem;color:var(--muted);}
+  .blank-toggle input{width:16px;height:16px;}
+
+  /* ---------- Solicitud letter preview (mimics a Word page) ---------- */
+  .sol-report{font-size:0.86rem;line-height:1.55;color:#1a1a1a;}
+  .sol-report .shead{text-align:right;font-size:0.82rem;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:16px;}
+  .sol-report .shead div{margin-bottom:1px;}
+  .sol-report .sfecha{text-align:right;margin-bottom:16px;min-height:1.2em;}
+  .sol-report p{margin:0 0 14px;}
+  .sol-report .snote{font-size:0.72rem;font-style:italic;color:var(--muted);border-top:1px solid var(--line);margin-top:30px;padding-top:10px;text-align:justify;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <svg class="badge" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="70" cy="70" r="68" fill="#F0E4C8" stroke="#C98A2B" stroke-width="2"/>
+    <g>
+      <!-- crate -->
+      <polygon points="38,88 102,88 94,110 46,110" fill="#8A5A2B"/>
+      <rect x="46" y="70" width="48" height="20" fill="#A6713A"/>
+      <line x1="46" y1="70" x2="94" y2="70" stroke="#6E4620" stroke-width="2"/>
+      <line x1="60" y1="70" x2="60" y2="90" stroke="#6E4620" stroke-width="2"/>
+      <line x1="80" y1="70" x2="80" y2="90" stroke="#6E4620" stroke-width="2"/>
+      <!-- wheat sprig -->
+      <path d="M70 68 C 68 54, 68 44, 70 32" stroke="#C98A2B" stroke-width="2.5" fill="none"/>
+      <ellipse cx="66" cy="40" rx="4" ry="7" fill="#C98A2B" transform="rotate(-30 66 40)"/>
+      <ellipse cx="74" cy="40" rx="4" ry="7" fill="#C98A2B" transform="rotate(30 74 40)"/>
+      <ellipse cx="65" cy="50" rx="4" ry="7" fill="#C98A2B" transform="rotate(-30 65 50)"/>
+      <ellipse cx="75" cy="50" rx="4" ry="7" fill="#C98A2B" transform="rotate(30 75 50)"/>
+      <ellipse cx="70" cy="34" rx="3.5" ry="6" fill="#C98A2B"/>
+      <!-- saw -->
+      <rect x="24" y="78" width="20" height="7" rx="2" fill="#1F6F63" transform="rotate(-18 24 78)"/>
+      <polygon points="14,96 40,80 40,86 18,100" fill="#DCD2B8" transform="rotate(-18 24 78)"/>
+      <!-- hammer -->
+      <rect x="96" y="60" width="7" height="34" rx="2" fill="#6E4620" transform="rotate(24 99 77)"/>
+      <rect x="90" y="52" width="20" height="12" rx="2" fill="#1F6F63" transform="rotate(24 99 77)"/>
+    </g>
+  </svg>
+  <h1>San José Obrero</h1>
+  <p class="sub">Elige qué reporte quieres generar para el colectivo.</p>
+  <p class="org">Fundación Banco de Alimentos de Nicaragua</p>
+  <div class="splash-choices">
+    <button id="startPhotoBtn" class="btn btn-primary choice-btn">
+      Memoria fotográfica
+      <span>Fotos de bahía, descarga, grupal y entrega</span>
+    </button>
+    <button id="startDonationBtn" class="btn btn-primary choice-btn choice-alt">
+      Informe de donación
+      <span>Libros de 40kg, 10kg y 5kg con el listado de personal</span>
+    </button>
+    <button id="startSolicitudBtn" class="btn btn-primary choice-btn choice-solicitud">
+      Solicitud de donación
+      <span>Carta para pedir alimentos o insumos para animales</span>
+    </button>
+  </div>
+</div>
+
+<div id="photoApp" class="wrap" style="display:none;">
+  <a href="#" id="backFromPhoto" class="back-link">← Volver al inicio</a>
+  <div class="top">
+    <img class="mini-badge" src="data:image/png;base64,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" alt="Logo Fundación Banco de Alimentos de Nicaragua" style="object-fit:contain;">
+    <div>
+      <h2>Memoria fotográfica</h2>
+      <div class="org">Colectivo Familiar: San José Obrero · Convenio COF-160424-0072</div>
+    </div>
+  </div>
+  <hr class="rule">
+
+  <div class="field-row">
+    <label for="fechaInput">Fecha del reporte</label>
+    <input type="date" id="fechaInput">
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-label" id="progressLabel">0 de 12 fotos cargadas</div>
+  </div>
+
+  <div id="groupsContainer"></div>
+
+  <div class="actions-bar">
+    <button class="btn btn-ghost" id="clearBtn">Borrar todo</button>
+    <button class="btn btn-primary" id="generateBtn">Generar reporte</button>
+  </div>
+
+  <div id="reportSection">
+    <div class="report-card" id="reportCard"></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="downloadXlsxBtn">Descargar Excel (.xlsx)</button>
+      <button class="btn btn-ghost" id="printBtn">Imprimir / Guardar PDF</button>
+      <button class="btn btn-drive" id="driveBtn">Guardar en Drive</button>
+      <button class="btn btn-onedrive" id="onedriveBtn">Guardar en OneDrive</button>
+      <button class="btn btn-ghost" id="shareBtn">Compartir</button>
+    </div>
+    <p class="note" id="shareNote"></p>
+  </div>
+</div>
+
+<div id="donationApp" class="wrap" style="display:none;">
+  <a href="#" id="backFromDonation" class="back-link">← Volver al inicio</a>
+  <div class="top">
+    <img class="mini-badge" src="data:image/png;base64,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" alt="Logo Fundación Banco de Alimentos de Nicaragua" style="object-fit:contain;">
+    <div>
+      <h2>Informe de donación</h2>
+      <div class="org">Colectivo Familiar: San José Obrero · Convenio COF-180424-0072</div>
+    </div>
+  </div>
+  <hr class="rule">
+
+  <div class="donation-field">
+    <label for="donFechaInput">Fecha del informe</label>
+    <input type="date" id="donFechaInput">
+  </div>
+
+  <h3 style="color:var(--wood);font-size:1rem;margin-bottom:4px;">Elige el libro</h3>
+  <div class="book-choices" id="bookChoices"></div>
+
+  <div id="rosterSection" style="display:none;">
+    <h3 style="color:var(--wood);font-size:1rem;margin-bottom:4px;">Personal / jefes de familia</h3>
+    <table class="roster-table">
+      <thead><tr><th>Nombre</th><th>Kg entregados</th><th></th></tr></thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+    <button class="add-row-btn" id="addRosterRowBtn">+ Agregar persona</button>
+
+    <div class="roster-summary">
+      <div>Total de kg: <strong id="rosterTotalKg">0</strong></div>
+    </div>
+
+    <div class="donation-field" style="margin-top:18px;">
+      <label for="beneficiariosInput">Cantidad de beneficiarios finales</label>
+      <input type="number" id="beneficiariosInput" min="0">
+    </div>
+    <div class="donation-field">
+      <label for="periodoInput">Periodo de informe</label>
+      <input type="text" id="periodoInput" placeholder="Ej. Agosto">
+    </div>
+
+    <div class="actions-bar">
+      <button class="btn btn-ghost" id="donClearBtn">Restablecer libro</button>
+      <button class="btn btn-primary" id="donGenerateBtn">Generar informe</button>
+    </div>
+  </div>
+
+  <div id="donReportSection" style="display:none;margin-top:36px;">
+    <div class="report-card don-report" id="donReportCard"></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="donDownloadXlsxBtn">Descargar Excel (.xlsx)</button>
+      <button class="btn btn-ghost" id="donPrintBtn">Imprimir / Guardar PDF</button>
+      <button class="btn btn-drive" id="donDriveBtn">Guardar en Drive</button>
+      <button class="btn btn-onedrive" id="donOnedriveBtn">Guardar en OneDrive</button>
+      <button class="btn btn-ghost" id="donShareBtn">Compartir</button>
+    </div>
+    <p class="note" id="donShareNote"></p>
+  </div>
+</div>
+
+<div id="solicitudApp" class="wrap" style="display:none;">
+  <a href="#" id="backFromSolicitud" class="back-link">← Volver al inicio</a>
+  <div class="top">
+    <img class="mini-badge" src="data:image/png;base64,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" alt="Logo Fundación Banco de Alimentos de Nicaragua" style="object-fit:contain;">
+    <div>
+      <h2>Solicitud de donación</h2>
+      <div class="org">Colectivo Familiar: San José Obrero</div>
+    </div>
+  </div>
+  <hr class="rule">
+
+  <h3 style="color:var(--wood);font-size:1rem;margin-bottom:4px;">Tipo de solicitud</h3>
+  <div class="tipo-choices" id="tipoChoices"></div>
+
+  <div id="solicitudFormSection" style="display:none;">
+    <div class="donation-field">
+      <label for="solFechaInput">Fecha de la carta</label>
+      <input type="date" id="solFechaInput">
+      <div class="blank-toggle">
+        <input type="checkbox" id="solFechaBlankCheck">
+        <label for="solFechaBlankCheck" style="margin:0;font-weight:400;">Dejar la fecha en blanco</label>
+      </div>
+    </div>
+    <div class="donation-field">
+      <label for="solKgInput">Cantidad de Kg solicitados</label>
+      <input type="number" id="solKgInput" min="0" value="800">
+    </div>
+    <div class="donation-field">
+      <label for="solFamiliasInput">Cantidad de familias</label>
+      <input type="number" id="solFamiliasInput" min="0" value="20">
+    </div>
+    <div class="donation-field">
+      <label for="solPersonasInput">Cantidad de personas beneficiadas</label>
+      <input type="number" id="solPersonasInput" min="0" value="76">
+    </div>
+    <div class="donation-field">
+      <label for="solMesInput">Mes de la solicitud</label>
+      <input type="text" id="solMesInput" placeholder="Ej. septiembre">
+    </div>
+
+    <div class="actions-bar">
+      <button class="btn btn-ghost" id="solClearBtn">Restablecer</button>
+      <button class="btn btn-primary" id="solGenerateBtn">Generar carta</button>
+    </div>
+  </div>
+
+  <div id="solReportSection" style="display:none;margin-top:36px;">
+    <div class="report-card sol-report" id="solReportCard"></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="solDownloadDocxBtn">Descargar Word (.docx)</button>
+      <button class="btn btn-ghost" id="solPrintBtn">Imprimir / Guardar PDF</button>
+      <button class="btn btn-drive" id="solDriveBtn">Guardar en Drive</button>
+      <button class="btn btn-onedrive" id="solOnedriveBtn">Guardar en OneDrive</button>
+      <button class="btn btn-ghost" id="solShareBtn">Compartir</button>
+    </div>
+    <p class="note" id="solShareNote"></p>
+  </div>
+</div>
+
+<script>
+/* ===================== Config ===================== */
+const ORG_NAME = "Fundacion Banco de Alimentos de Nicaragua";
+const ORG_LEGAL = "N Perpetuo 6871 - Agentes Extranjeros J-203-2023-0003  RUC J0810000428053";
+const COLECTIVO = "San Jose Obrero";
+const CONVENIO = "COF-160424-0072";
+const LOGO_BASE64 = "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";
+
+function base64ToBytes(b64){
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+const SLOTS = [
+  {id:1, group:"Bahía", label:"Bahía"},
+  {id:2, group:"Bahía", label:"Bahía"},
+  {id:3, group:"Descarga", label:"Descarga"},
+  {id:4, group:"Descarga", label:"Descarga"},
+  {id:5, group:"Foto grupal", label:"Foto grupal con el personal", shortLabel:"Foto grupal", fullWidth:true},
+  {id:6, group:"Entrega del producto", label:"Entrega del producto"},
+  {id:7, group:"Entrega del producto", label:"Entrega del producto"},
+  {id:8, group:"Entrega del producto", label:"Entrega del producto"},
+  {id:9, group:"Entrega del producto", label:"Entrega del producto"},
+  {id:10, group:"Entrega del producto", label:"Entrega del producto"},
+  {id:11, group:"Entrega del producto", label:"Entrega del producto"},
+  {id:12, group:"Entrega del producto", label:"Entrega del producto", fullWidth:true},
+];
+const GROUP_ORDER = ["Bahía","Descarga","Foto grupal","Entrega del producto"];
+
+const state = {
+  fecha: "",
+  photos: {} // id -> {dataURL, width, height, blob}
+};
+
+/* ===================== Storage helpers (best-effort, non-blocking) ===================== */
+async function storageSet(key, value){
+  try{ if(window.storage) await window.storage.set(key, value, false); }catch(e){ /* ignore */ }
+}
+async function storageGet(key){
+  try{ if(window.storage) return await window.storage.get(key, false); }catch(e){ return null; }
+  return null;
+}
+async function storageDelete(key){
+  try{ if(window.storage) await window.storage.delete(key, false); }catch(e){ /* ignore */ }
+}
+
+/* ===================== Image processing ===================== */
+function resizeImageFile(file, maxDim=1100, quality=0.78){
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      let {width, height} = img;
+      if(width > maxDim || height > maxDim){
+        if(width >= height){ height = Math.round(height * (maxDim/width)); width = maxDim; }
+        else { width = Math.round(width * (maxDim/height)); height = maxDim; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob)=>{
+        const reader = new FileReader();
+        reader.onload = ()=> resolve({dataURL: reader.result, width, height, blob});
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }, "image/jpeg", quality);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function dataURLToUint8Array(dataURL){
+  const base64 = dataURL.split(",")[1];
+  const bin = atob(base64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+/* ===================== UI: build slot groups ===================== */
+function buildGroupsUI(){
+  const container = document.getElementById("groupsContainer");
+  container.innerHTML = "";
+  GROUP_ORDER.forEach(groupName=>{
+    const slotsInGroup = SLOTS.filter(s=>s.group===groupName);
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "group";
+    const h3 = document.createElement("h3");
+    h3.textContent = groupName;
+    groupDiv.appendChild(h3);
+    const grid = document.createElement("div");
+    grid.className = "slot-grid";
+    slotsInGroup.forEach(slot=>{
+      grid.appendChild(buildSlotEl(slot));
+    });
+    groupDiv.appendChild(grid);
+    container.appendChild(groupDiv);
+  });
+}
+
+function buildSlotEl(slot){
+  const div = document.createElement("div");
+  div.className = "slot";
+  div.id = `slot-${slot.id}`;
+  div.innerHTML = `
+    <input type="file" accept="image/*" id="file-${slot.id}">
+    <div class="slot-inner"></div>
+  `;
+  renderSlotContent(slot.id, div);
+  const fileInput = div.querySelector(`#file-${slot.id}`);
+  fileInput.addEventListener("change", async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const result = await resizeImageFile(file);
+    state.photos[slot.id] = result;
+    renderSlotContent(slot.id, div);
+    updateProgress();
+    storageSet(`memoria:photo:${slot.id}`, result.dataURL);
+  });
+  div.addEventListener("click", (e)=>{
+    if(e.target.classList.contains("remove")) return;
+    // El input cubre toda la casilla, así que el toque ya lo abre directamente.
+  });
+  return div;
+}
+
+function renderSlotContent(slotId, elOverride){
+  const slot = SLOTS.find(s=>s.id===slotId);
+  const el = elOverride || document.getElementById(`slot-${slotId}`);
+  const inner = el.querySelector(".slot-inner");
+  const photo = state.photos[slotId];
+  if(photo){
+    el.classList.add("filled");
+    inner.innerHTML = `
+      <img src="${photo.dataURL}" alt="Foto ${slotId}">
+      <div class="tag">Foto ${slotId} · ${slot.label}</div>
+      <button class="remove" title="Quitar foto">×</button>
+    `;
+    inner.querySelector(".remove").addEventListener("click", (e)=>{
+      e.stopPropagation();
+      delete state.photos[slotId];
+      storageDelete(`memoria:photo:${slotId}`);
+      renderSlotContent(slotId, el);
+      updateProgress();
+    });
+  } else {
+    el.classList.remove("filled");
+    inner.innerHTML = `
+      <div class="placeholder">
+        <div class="num">${String(slotId).padStart(2,"0")}</div>
+        <div class="lbl">${slot.label}</div>
+      </div>
+    `;
+  }
+}
+
+function updateProgress(){
+  const count = Object.keys(state.photos).length;
+  document.getElementById("progressFill").style.width = `${(count/12)*100}%`;
+  document.getElementById("progressLabel").textContent = `${count} de 12 fotos cargadas`;
+}
+
+/* ===================== Report preview ===================== */
+function formatFechaDisplay(iso){
+  if(!iso) return "(sin fecha)";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function buildReportHTML(){
+  const fecha = state.fecha;
+  let pairsHtml = "";
+  let i = 0;
+  while(i < SLOTS.length){
+    const a = SLOTS[i];
+    if(a.fullWidth){
+      pairsHtml += `<div class="report-pair full">${reportPhotoCell(a)}</div>`;
+      i += 1;
+    } else {
+      const b = SLOTS[i+1];
+      pairsHtml += `<div class="report-pair">${reportPhotoCell(a)}${reportPhotoCell(b)}</div>`;
+      i += 2;
+    }
+  }
+  return `
+    <div class="report-head">
+      <img class="logo" src="data:image/png;base64,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" alt="Logo">
+      <div class="headtext">
+        <h2>${ORG_NAME}</h2>
+        <div class="legal">${ORG_LEGAL}</div>
+      </div>
+    </div>
+    <div class="title2">MEMORIA FOTOGRAFICA</div>
+    <div class="report-meta">
+      <div>En nombre del Colectivo Familiar: <strong>${COLECTIVO}</strong><br>Número de Convenio: <strong>${CONVENIO}</strong></div>
+      <div class="fecha">FECHA<br>${formatFechaDisplay(fecha)}</div>
+    </div>
+    <div class="report-grid">${pairsHtml}</div>
+  `;
+}
+
+function reportPhotoCell(slot){
+  if(!slot) return `<div></div>`;
+  const photo = state.photos[slot.id];
+  const label = `FOTO ${slot.id} · ${slot.label}`;
+  const img = photo ? `<img src="${photo.dataURL}" alt="${label}">` : `<div class="empty">Sin foto</div>`;
+  return `
+    <div class="report-photo">
+      <div class="lbl">${label}</div>
+      <div class="box">${img}</div>
+    </div>
+  `;
+}
+
+/* ===================== XLSX generation (raw OOXML, matches Fundación template) ===================== */
+const EMU_PER_PX = 9525;
+
+function xmlEscape(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function inlineStrCell(ref, value, style){
+  return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+}
+
+async function buildWorkbookBlob(){
+  const zip = new JSZip();
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="jpeg" ContentType="image/jpeg"/>
+<Default Extension="png" ContentType="image/png"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const coreXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title>Memoria Fotografica</dc:title>
+<dc:creator>App Memoria Fotografica</dc:creator>
+</cp:coreProperties>`;
+
+  const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+<Application>Memoria Fotografica App</Application>
+</Properties>`;
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="MEMORIA" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="4">
+<font><sz val="11"/><name val="Arial"/></font>
+<font><b/><sz val="16"/><name val="Arial"/></font>
+<font><b/><sz val="11"/><name val="Arial"/></font>
+<font><sz val="9"/><name val="Arial"/></font>
+</fonts>
+<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="4">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+</cellXfs>
+</styleSheet>`;
+
+  // ---- layout ----
+  const rowDefs = []; // {r, ht, cells:[xml]}
+  const merges = [];
+  rowDefs.push({r:1, ht:30, cells:[inlineStrCell("A1", ORG_NAME, 1)]});
+  merges.push("A1:J1");
+  rowDefs.push({r:2, ht:26, cells:[inlineStrCell("A2", ORG_LEGAL, 3)]});
+  merges.push("A2:J2");
+  rowDefs.push({r:3, ht:32, cells:[
+    inlineStrCell("A3", `En nombre del Colectivo Familiar: ${COLECTIVO}   |   Numero de Convenio: ${CONVENIO}`, 2),
+    inlineStrCell("G3", "FECHA", 2)
+  ]});
+  merges.push("A3:F3"); merges.push("G3:J3");
+  rowDefs.push({r:4, ht:18, cells:[inlineStrCell("G4", formatFechaDisplay(state.fecha), 0)]});
+  merges.push("G4:J4");
+  rowDefs.push({r:5, ht:8, cells:[]});
+
+  const maxBoxW = 350, maxBoxH = 250;
+  const maxBoxWFull = 700, maxBoxHFull = 300;
+  let curRow = 6;
+  const imageAnchors = []; // {col0,row0,cx,cy,blob}
+
+  let si = 0;
+  const logoW = 64, logoH = 55;
+  imageAnchors.push({col0:0, row0:0, cx:logoW*EMU_PER_PX, cy:logoH*EMU_PER_PX, blob:base64ToBytes(LOGO_BASE64), isLogo:true});
+  while(si < SLOTS.length){
+    const a = SLOTS[si];
+
+    if(a.fullWidth){
+      const labelRow = curRow;
+      rowDefs.push({r:labelRow, ht:30, cells:[
+        inlineStrCell(`B${labelRow}`, `FOTO ${a.id} - ${(a.shortLabel||a.label).toUpperCase()}`, 2)
+      ]});
+      merges.push(`B${labelRow}:J${labelRow}`);
+
+      const imgRow = labelRow + 1;
+      const photo = state.photos[a.id];
+      const dim = containSize(photo, maxBoxWFull, maxBoxHFull);
+      const rowHeightPx = Math.max(dim.h, 40);
+      const rowHeightPt = Math.round(rowHeightPx * 0.75);
+      rowDefs.push({r:imgRow, ht:rowHeightPt, cells:[]});
+      if(photo){
+        imageAnchors.push({col0:1, row0:imgRow-1, cx:dim.w*EMU_PER_PX, cy:dim.h*EMU_PER_PX, blob:photo.blob});
+      }
+      const spacerRow = imgRow + 1;
+      rowDefs.push({r:spacerRow, ht:6, cells:[]});
+      curRow = spacerRow + 1;
+      si += 1;
+      continue;
+    }
+
+    const left = a;
+    const right = SLOTS[si+1];
+    const leftPhoto = state.photos[left.id];
+    const rightPhoto = state.photos[right.id];
+
+    const labelRow = curRow;
+    rowDefs.push({r:labelRow, ht:30, cells:[
+      inlineStrCell(`B${labelRow}`, `FOTO ${left.id} - ${(left.shortLabel||left.label).toUpperCase()}`, 2),
+      inlineStrCell(`G${labelRow}`, `FOTO ${right.id} - ${(right.shortLabel||right.label).toUpperCase()}`, 2)
+    ]});
+    merges.push(`B${labelRow}:E${labelRow}`);
+    merges.push(`G${labelRow}:J${labelRow}`);
+
+    const imgRow = labelRow + 1;
+    // compute contained sizes
+    const leftDim = containSize(leftPhoto, maxBoxW, maxBoxH);
+    const rightDim = containSize(rightPhoto, maxBoxW, maxBoxH);
+    const rowHeightPx = Math.max(leftDim.h, rightDim.h, 40);
+    const rowHeightPt = Math.round(rowHeightPx * 0.75);
+    rowDefs.push({r:imgRow, ht:rowHeightPt, cells:[]});
+
+    if(leftPhoto){
+      imageAnchors.push({col0:1, row0:imgRow-1, cx:leftDim.w*EMU_PER_PX, cy:leftDim.h*EMU_PER_PX, blob:leftPhoto.blob});
+    }
+    if(rightPhoto){
+      imageAnchors.push({col0:6, row0:imgRow-1, cx:rightDim.w*EMU_PER_PX, cy:rightDim.h*EMU_PER_PX, blob:rightPhoto.blob});
+    }
+
+    const spacerRow = imgRow + 1;
+    rowDefs.push({r:spacerRow, ht:6, cells:[]});
+    curRow = spacerRow + 1;
+    si += 2;
+  }
+
+  const colsXml = `<cols><col min="1" max="1" width="3" customWidth="1"/><col min="2" max="5" width="10" customWidth="1"/><col min="6" max="6" width="3" customWidth="1"/><col min="7" max="10" width="10" customWidth="1"/></cols>`;
+
+  const sheetRowsXml = rowDefs.map(rd=>`<row r="${rd.r}" ht="${rd.ht}" customHeight="1">${rd.cells.join("")}</row>`).join("");
+  const mergesXml = merges.map(m=>`<mergeCell ref="${m}"/>`).join("");
+
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<dimension ref="A1:J${curRow}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+${colsXml}
+<sheetData>${sheetRowsXml}</sheetData>
+<mergeCells count="${merges.length}">${mergesXml}</mergeCells>
+<pageMargins left="0.3" right="0.3" top="0.3" bottom="0.3" header="0.2" footer="0.2"/>
+<pageSetup paperSize="1" fitToWidth="1" fitToHeight="0" orientation="portrait"/>
+<drawing r:id="rId1"/>
+</worksheet>`;
+
+  const sheetRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>`;
+
+  const drawingAnchorsXml = [];
+  const drawingRelsList = [];
+  imageAnchors.forEach((a, idx)=>{
+    const i = idx+1;
+    const rid = `rId${i}`;
+    const ext = a.isLogo ? "png" : "jpeg";
+    drawingRelsList.push(`<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${i}.${ext}"/>`);
+    drawingAnchorsXml.push(`<xdr:oneCellAnchor>
+<xdr:from><xdr:col>${a.col0}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${a.row0}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
+<xdr:ext cx="${Math.round(a.cx)}" cy="${Math.round(a.cy)}"/>
+<xdr:pic>
+<xdr:nvPicPr><xdr:cNvPr id="${i+1}" name="Picture ${i}"/><xdr:cNvPicPr/></xdr:nvPicPr>
+<xdr:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>
+<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${Math.round(a.cx)}" cy="${Math.round(a.cy)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>
+</xdr:pic>
+<xdr:clientData/>
+</xdr:oneCellAnchor>`);
+  });
+
+  const drawingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+${drawingAnchorsXml.join("")}
+</xdr:wsDr>`;
+
+  const drawingRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${drawingRelsList.join("")}
+</Relationships>`;
+
+  zip.file("[Content_Types].xml", contentTypes);
+  zip.file("_rels/.rels", rootRels);
+  zip.file("docProps/core.xml", coreXml);
+  zip.file("docProps/app.xml", appXml);
+  zip.file("xl/workbook.xml", workbookXml);
+  zip.file("xl/_rels/workbook.xml.rels", workbookRels);
+  zip.file("xl/styles.xml", stylesXml);
+  zip.file("xl/worksheets/sheet1.xml", sheetXml);
+  zip.file("xl/worksheets/_rels/sheet1.xml.rels", sheetRels);
+  zip.file("xl/drawings/drawing1.xml", drawingXml);
+  zip.file("xl/drawings/_rels/drawing1.xml.rels", drawingRelsXml);
+  imageAnchors.forEach((a, idx)=>{
+    const ext = a.isLogo ? "png" : "jpeg";
+    zip.file(`xl/media/image${idx+1}.${ext}`, a.blob);
+  });
+
+  return await zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+function containSize(photo, maxW, maxH){
+  if(!photo) return {w:0, h:0};
+  const ratio = Math.min(maxW/photo.width, maxH/photo.height, 1);
+  return {w: Math.round(photo.width*ratio), h: Math.round(photo.height*ratio)};
+}
+
+/* ===================== Wire up UI ===================== */
+document.getElementById("startPhotoBtn").addEventListener("click", ()=>{
+  document.getElementById("splash").style.display = "none";
+  document.getElementById("photoApp").style.display = "block";
+});
+document.getElementById("startDonationBtn").addEventListener("click", ()=>{
+  document.getElementById("splash").style.display = "none";
+  document.getElementById("donationApp").style.display = "block";
+});
+document.getElementById("backFromPhoto").addEventListener("click", (e)=>{
+  e.preventDefault();
+  document.getElementById("photoApp").style.display = "none";
+  document.getElementById("splash").style.display = "flex";
+});
+document.getElementById("backFromDonation").addEventListener("click", (e)=>{
+  e.preventDefault();
+  document.getElementById("donationApp").style.display = "none";
+  document.getElementById("splash").style.display = "flex";
+});
+document.getElementById("startSolicitudBtn").addEventListener("click", ()=>{
+  document.getElementById("splash").style.display = "none";
+  document.getElementById("solicitudApp").style.display = "block";
+});
+document.getElementById("backFromSolicitud").addEventListener("click", (e)=>{
+  e.preventDefault();
+  document.getElementById("solicitudApp").style.display = "none";
+  document.getElementById("splash").style.display = "flex";
+});
+
+buildGroupsUI();
+
+document.getElementById("fechaInput").addEventListener("change", (e)=>{
+  state.fecha = e.target.value;
+  storageSet("memoria:fecha", state.fecha);
+});
+
+document.getElementById("clearBtn").addEventListener("click", async ()=>{
+  if(!confirm("¿Borrar todas las fotos y la fecha de este reporte?")) return;
+  state.photos = {};
+  state.fecha = "";
+  document.getElementById("fechaInput").value = "";
+  SLOTS.forEach(s=>{ renderSlotContent(s.id); storageDelete(`memoria:photo:${s.id}`); });
+  storageDelete("memoria:fecha");
+  updateProgress();
+  document.getElementById("reportSection").style.display = "none";
+});
+
+document.getElementById("generateBtn").addEventListener("click", ()=>{
+  const card = document.getElementById("reportCard");
+  card.innerHTML = buildReportHTML();
+  document.getElementById("reportSection").style.display = "block";
+  document.getElementById("reportSection").scrollIntoView({behavior:"smooth"});
+});
+
+document.getElementById("printBtn").addEventListener("click", ()=>{
+  window.print();
+});
+
+let lastBlob = null;
+async function getWorkbookBlobCached(){
+  lastBlob = await buildWorkbookBlob();
+  return lastBlob;
+}
+
+document.getElementById("downloadXlsxBtn").addEventListener("click", async (e)=>{
+  const btn = e.currentTarget;
+  const original = btn.textContent;
+  btn.textContent = "Generando...";
+  btn.disabled = true;
+  try{
+    const blob = await getWorkbookBlobCached();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const fname = `Memoria_Fotografica_${state.fecha || "reporte"}.xlsx`;
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+
+async function shareWorkbook(noteEl){
+  const blob = await getWorkbookBlobCached();
+  const fname = `Memoria_Fotografica_${state.fecha || "reporte"}.xlsx`;
+  const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:"Memoria Fotográfica", text:"Memoria fotográfica - San José Obrero"});
+      return true;
+    }catch(err){
+      return false;
+    }
+  }
+  return false;
+}
+
+document.getElementById("shareBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("shareNote");
+  const ok = await shareWorkbook();
+  if(!ok){
+    note.textContent = "Tu navegador no permite compartir archivos directamente. Descarga el Excel y compártelo desde tu galería o gestor de archivos.";
+  }
+});
+
+document.getElementById("driveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("shareNote");
+  const shared = await shareWorkbook();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("downloadXlsxBtn").click();
+    window.open("https://drive.google.com/drive/my-drive", "_blank");
+  }
+});
+
+document.getElementById("onedriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("shareNote");
+  const shared = await shareWorkbook();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("downloadXlsxBtn").click();
+    window.open("https://onedrive.live.com/", "_blank");
+  }
+});
+
+/* ===================== Restore draft from storage ===================== */
+(async function restoreDraft(){
+  const fecha = await storageGet("memoria:fecha");
+  if(fecha && fecha.value){
+    state.fecha = fecha.value;
+    document.getElementById("fechaInput").value = fecha.value;
+  }
+  for(const slot of SLOTS){
+    const res = await storageGet(`memoria:photo:${slot.id}`).catch(()=>null);
+  }
+  // sequential restore with individual error handling (keys may not exist)
+  for(const slot of SLOTS){
+    try{
+      const res = await window.storage.get(`memoria:photo:${slot.id}`, false);
+      if(res && res.value){
+        const dataURL = res.value;
+        const dims = await getImageDims(dataURL);
+        const blob = dataURLtoBlob(dataURL);
+        state.photos[slot.id] = {dataURL, width:dims.width, height:dims.height, blob};
+        renderSlotContent(slot.id);
+      }
+    }catch(e){ /* key not found, ignore */ }
+  }
+  updateProgress();
+})();
+
+function getImageDims(dataURL){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=> resolve({width:img.naturalWidth, height:img.naturalHeight});
+    img.src = dataURL;
+  });
+}
+function dataURLtoBlob(dataURL){
+  const arr = dataURL.split(",");
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+  return new Blob([u8arr], {type:mime});
+}
+
+/* =======================================================================
+   ===================  INFORME DE DONACIÓN  =============================
+   ======================================================================= */
+
+// Datos originales del archivo Formato_INFORME_DONACION.xlsx (sin modificar)
+const DON_LEGAL = "N°Perpetuo 6871 – Agentes Extranjeros J – 203-2023 – 0003";
+const DON_RUC = "N° RUC J0810000428053";
+const DON_DIRECTOR = "Lic. Edgar Mendieta.";
+const DON_CARGO = "Director Ejecutivo.";
+const DON_ORG = "Fundacion Banco de Alimentos de Nicaragua.";
+const DON_CONVENIO = "COF-180424-0072";
+const DON_REPRESENTANTE = "Yojana María Flores Barrios";
+const DON_CEDULA = "570-300683-0000R";
+const DON_MUNICIPIO = "Altagracia";
+const DON_CORREO = "flores.johanna30junio@gmail.com";
+const DON_TELEFONO = "86215307";
+const DON_PARRAFO = "Satisfacer necesidades básicas: El paquete de alimentos puede asegurar que la familia tenga acceso a comida y agua, cubriendo necesidades nutricionales fundamentales en momentos de escasez o interrupción de la cadena de suministro de alimentos. 2 Brindar apoyo en momentos difíciles, saber que se cuenta con recursos básicos puede aliviar la angustia de la incertidumbre y la preocupación por la sobrevivencia, lo cual tiene un impacto positivo en la salud mental de la familia.3.Recursos adicionales para sobrevivir: Si el paquete incluye bienes no alimentarios (como productos de higiene, ropa, o utensilios básicos), puede ayudar a la familia a mantenerse limpia y saludable, reduciendo el riesgo de enfermedades y aumentando su comodidad y seguridad en un contexto de emergencia.4 Esta asistencia facilita el proceso de recuperación en situaciones de desastre o crisis, al permitir que la familia se enfoque en otros aspectos necesarios para restablecer su vida cotidiana, como la reconstrucción de la vivienda o la búsqueda de trabajo.";
+
+const DON_BOOKS = {
+  "40kg": {
+    label: "40 kg",
+    desc: "800 kg en total · 20 personas",
+    defaultKg: 40,
+    defaultBenef: 76,
+    kgColLabel: "CANTIDAD DE KILOGRAMOS ENTREGADO POR JEFES DE FAMILIA",
+    totalColLabel: null, // uses total kg style (merged number)
+    roster: [
+      ["Yojana Maria Flores Barrios",40],["Lenin Ernesto Gonzalez Morales",40],
+      ["Leyla Suhey Amador Pilarte",40],["Pedro Barahona Gonzalez",40],
+      ["Julio José Arauz Ortega",40],["Imara Isabel Pineda Alvarez",40],
+      ["Manuel Condega",40],["Ana Isabel Alvarez Romero",40],
+      ["Lorenzo Antonio González Valerio",40],["Emeregilda Ramírez",40],
+      ["Juan Carlos González Sequeira",40],["Ricardo Antonio López",40],
+      ["Yeison Antonio Garzo Ortiz",40],["Ervin Stiven Bojorge García",40],
+      ["Juan Carlos Madrigal Alemán",40],["María Cristina Amador Pilarte",40],
+      ["José Santos Amador Bermúdez",40],["Ismael Antonio Arauz Ramírez",40],
+      ["Magdaleno Arauz Ortega",40],["Eleuterio Arauz Bermúdez",40]
+    ]
+  },
+  "10kg": {
+    label: "10 kg",
+    desc: "100 kg en total · 10 personas",
+    defaultKg: 10,
+    defaultBenef: 10,
+    kgColLabel: "CANTIDAD DE KILOGRAMOS ENTREGADO POR JEFES DE FAMILIA",
+    roster: [
+      ["Yojana Maria Flores Barrios",10],["Lenin Ernesto Gonzalez Morales",10],
+      ["Pedro Barahona Gonzalez",10],["Julio José Arauz Ortega",10],
+      ["Manuel Condega",10],["Lorenzo Antonio González Valerio",10],
+      ["Emeregilda Ramírez",10],["Juan Carlos Madrigal Alemán",10],
+      ["María Cristina Amador Pilarte",10],["Magdaleno Arauz Ortega",10]
+    ]
+  },
+  "5kg": {
+    label: "5 kg",
+    desc: "5 kg en total · 3 personas",
+    defaultKg: 1,
+    defaultBenef: 3,
+    kgColLabel: "CANTIDAD DE KILOGRAMOS ENTREGADO POR JEFES DE FAMILIA",
+    kgTotalLabel: "CANTIDAD DE KG RECIBIDOS",
+    roster: [
+      ["Yojana María Flores Barrios",1],["Lenin Ernesto Gonzalez Morales",2],
+      ["Lorenzo Antonio González Valerio",2]
+    ]
+  }
+};
+
+const donState = {
+  fecha: "",
+  bookKey: null,
+  roster: [], // [{name, kg}]
+  beneficiarios: 0,
+  periodo: ""
+};
+
+function monthNameEs(dateStr){
+  if(!dateStr) return "";
+  const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const [y,m,d] = dateStr.split("-").map(Number);
+  return meses[m-1] || "";
+}
+
+function buildBookChoicesUI(){
+  const container = document.getElementById("bookChoices");
+  container.innerHTML = "";
+  Object.keys(DON_BOOKS).forEach(key=>{
+    const book = DON_BOOKS[key];
+    const card = document.createElement("div");
+    card.className = "book-card";
+    card.id = `book-${key}`;
+    card.innerHTML = `<div class="kg">${book.label}</div><div class="desc">${book.desc}</div>`;
+    card.addEventListener("click", ()=> selectBook(key));
+    container.appendChild(card);
+  });
+}
+
+async function selectBook(key){
+  donState.bookKey = key;
+  Object.keys(DON_BOOKS).forEach(k=>{
+    document.getElementById(`book-${k}`).classList.toggle("selected", k===key);
+  });
+  // try restore saved roster for this book, else use defaults
+  let roster = null;
+  try{
+    const res = await window.storage.get(`donacion:roster:${key}`, false);
+    if(res && res.value) roster = JSON.parse(res.value);
+  }catch(e){ /* not found */ }
+  if(!roster){
+    roster = DON_BOOKS[key].roster.map(([name,kg])=>({name, kg}));
+  }
+  donState.roster = roster;
+
+  let benef = null;
+  try{
+    const res = await window.storage.get(`donacion:benef:${key}`, false);
+    if(res && res.value) benef = Number(res.value);
+  }catch(e){ /* not found */ }
+  donState.beneficiarios = (benef!==null && !isNaN(benef)) ? benef : DON_BOOKS[key].defaultBenef;
+
+  donState.periodo = monthNameEs(donState.fecha) || "";
+  document.getElementById("periodoInput").value = donState.periodo;
+  document.getElementById("beneficiariosInput").value = donState.beneficiarios;
+
+  renderRosterTable();
+  document.getElementById("rosterSection").style.display = "block";
+  document.getElementById("donReportSection").style.display = "none";
+  document.getElementById("rosterSection").scrollIntoView({behavior:"smooth"});
+}
+
+function renderRosterTable(){
+  const tbody = document.getElementById("rosterBody");
+  tbody.innerHTML = "";
+  donState.roster.forEach((person, idx)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${xmlEscape(person.name)}" data-idx="${idx}" class="roster-name"></td>
+      <td><input type="number" value="${person.kg}" min="0" step="0.5" data-idx="${idx}" class="roster-kg"></td>
+      <td><button class="rm-row" data-idx="${idx}" title="Quitar">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll(".roster-name").forEach(inp=>{
+    inp.addEventListener("input", (e)=>{
+      donState.roster[Number(e.target.dataset.idx)].name = e.target.value;
+      saveRosterDraft();
+    });
+  });
+  tbody.querySelectorAll(".roster-kg").forEach(inp=>{
+    inp.addEventListener("input", (e)=>{
+      donState.roster[Number(e.target.dataset.idx)].kg = Number(e.target.value) || 0;
+      updateRosterTotal();
+      saveRosterDraft();
+    });
+  });
+  tbody.querySelectorAll(".rm-row").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      donState.roster.splice(Number(e.target.dataset.idx),1);
+      renderRosterTable();
+      updateRosterTotal();
+      saveRosterDraft();
+    });
+  });
+  updateRosterTotal();
+}
+
+function updateRosterTotal(){
+  const total = donState.roster.reduce((s,p)=>s+(Number(p.kg)||0),0);
+  document.getElementById("rosterTotalKg").textContent = total;
+}
+
+function saveRosterDraft(){
+  if(!donState.bookKey) return;
+  storageSet(`donacion:roster:${donState.bookKey}`, JSON.stringify(donState.roster));
+}
+
+document.getElementById("addRosterRowBtn").addEventListener("click", ()=>{
+  const book = DON_BOOKS[donState.bookKey];
+  donState.roster.push({name:"", kg: book ? book.defaultKg : 0});
+  renderRosterTable();
+  saveRosterDraft();
+});
+
+document.getElementById("donFechaInput").addEventListener("change", (e)=>{
+  donState.fecha = e.target.value;
+  if(donState.bookKey && !document.getElementById("periodoInput").dataset.userEdited){
+    donState.periodo = monthNameEs(donState.fecha);
+    document.getElementById("periodoInput").value = donState.periodo;
+  }
+  storageSet("donacion:fecha", donState.fecha);
+});
+
+document.getElementById("periodoInput").addEventListener("input", (e)=>{
+  donState.periodo = e.target.value;
+  e.target.dataset.userEdited = "1";
+});
+
+document.getElementById("beneficiariosInput").addEventListener("input", (e)=>{
+  donState.beneficiarios = Number(e.target.value) || 0;
+  if(donState.bookKey) storageSet(`donacion:benef:${donState.bookKey}`, String(donState.beneficiarios));
+});
+
+document.getElementById("donClearBtn").addEventListener("click", async ()=>{
+  if(!donState.bookKey) return;
+  if(!confirm("¿Restablecer el listado de personal a los valores originales de este libro?")) return;
+  donState.roster = DON_BOOKS[donState.bookKey].roster.map(([name,kg])=>({name, kg}));
+  donState.beneficiarios = DON_BOOKS[donState.bookKey].defaultBenef;
+  document.getElementById("beneficiariosInput").value = donState.beneficiarios;
+  renderRosterTable();
+  await storageDelete(`donacion:roster:${donState.bookKey}`);
+  await storageDelete(`donacion:benef:${donState.bookKey}`);
+});
+
+buildBookChoicesUI();
+
+/* ---------- Donation report preview ---------- */
+function buildDonationReportHTML(){
+  const book = DON_BOOKS[donState.bookKey];
+  const fechaDisplay = formatFechaDisplay(donState.fecha);
+  const totalKg = donState.roster.reduce((s,p)=>s+(Number(p.kg)||0),0);
+  const leftColLabel = book.kgTotalLabel || null;
+
+  const rowsHtml = donState.roster.map((p,idx)=>{
+    const leftCell = idx===0 ? `<td class="totalcell" rowspan="${donState.roster.length}">${leftColLabel ? totalKg : totalKg+"kg"}</td>` : "";
+    const benefCell = idx===0 ? `<td class="totalcell" rowspan="${donState.roster.length}">${donState.beneficiarios}</td>` : "";
+    return `<tr>${leftCell}<td>${xmlEscape(p.name)}</td><td>${p.kg}kg</td>${benefCell}</tr>`;
+  }).join("");
+
+  return `
+    <div class="dhead">
+      <img src="data:image/png;base64,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" alt="Logo">
+      <div style="flex:1;">
+        <div class="t1">Fundación Banco de Alimentos de Nicaragua</div>
+        <div class="dhead2">${DON_LEGAL} · ${DON_RUC}</div>
+      </div>
+    </div>
+    <div class="dtitle">INFORME DE DONACION</div>
+    <div class="dinfo">
+      <div class="k"></div><div>${DON_DIRECTOR} ${DON_CARGO} ${DON_ORG}</div>
+      <div class="k">FECHA:</div><div>${fechaDisplay}</div>
+      <div class="k">Nombre del Colectivo Familiar:</div><div>San José Obrero</div>
+      <div class="k">Numero de Convenio:</div><div>${DON_CONVENIO}</div>
+      <div class="k">Nombre del Representante del Colectivo:</div><div>${DON_REPRESENTANTE}</div>
+      <div class="k">Numero de Cedula:</div><div>${DON_CEDULA}</div>
+      <div class="k">Municipio:</div><div>${DON_MUNICIPIO}</div>
+      <div class="k">Correo:</div><div>${DON_CORREO}</div>
+      <div class="k">Telefono:</div><div>${DON_TELEFONO}</div>
+      <div class="k">Periodo de informe:</div><div>${xmlEscape(donState.periodo)}</div>
+    </div>
+    <table class="dtable">
+      <thead><tr>
+        <th style="width:14%;">${leftColLabel || "CANTIDAD DE KG"}</th>
+        <th>${book.kgColLabel}</th>
+        <th style="width:14%;"></th>
+        <th style="width:16%;">CANTIDAD DE BENEFICIARIOS FINALES</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="dq">¿DE QUE FORMA AYUDO EL PAQUETE DE ALIMENTO DE RESCATES Y BIENES NO ALMENTOS A LA FAMILIA ?</div>
+    <div class="dtext">${DON_PARRAFO}</div>
+    <div class="dfirma"><div class="line">Firma del delegado</div></div>
+  `;
+}
+
+document.getElementById("donGenerateBtn").addEventListener("click", ()=>{
+  if(donState.roster.length===0){ alert("Agrega al menos una persona al listado."); return; }
+  const card = document.getElementById("donReportCard");
+  card.innerHTML = buildDonationReportHTML();
+  document.getElementById("donReportSection").style.display = "block";
+  document.getElementById("donReportSection").scrollIntoView({behavior:"smooth"});
+});
+
+document.getElementById("donPrintBtn").addEventListener("click", ()=> window.print());
+
+/* ---------- Donation XLSX ---------- */
+async function buildDonationWorkbookBlob(){
+  const zip = new JSZip();
+  const book = DON_BOOKS[donState.bookKey];
+  const totalKg = donState.roster.reduce((s,p)=>s+(Number(p.kg)||0),0);
+  const n = donState.roster.length;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const coreXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title>Informe de Donacion</dc:title>
+<dc:creator>App Memoria Fotografica</dc:creator>
+</cp:coreProperties>`;
+
+  const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+<Application>Informe de Donacion App</Application>
+</Properties>`;
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="INFORME DONACION" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="6">
+<font><sz val="11"/><name val="Arial"/></font>
+<font><b/><sz val="15"/><name val="Arial"/></font>
+<font><sz val="9"/><name val="Arial"/></font>
+<font><b/><sz val="13"/><name val="Arial"/></font>
+<font><b/><sz val="10"/><name val="Arial"/></font>
+<font><b/><sz val="10"/><name val="Arial"/></font>
+</fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2EEE2"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="9">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+</cellXfs>
+</styleSheet>`;
+
+  const rowDefs = [];
+  const merges = [];
+  let row = 1;
+
+  rowDefs.push({r:row, ht:26, cells:[inlineStrCell(`A${row}`,"Fundación Banco de Alimentos de Nicaragua",1)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+  rowDefs.push({r:row, ht:18, cells:[inlineStrCell(`A${row}`, DON_LEGAL, 2)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+  rowDefs.push({r:row, ht:16, cells:[inlineStrCell(`A${row}`, DON_RUC, 2)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+  rowDefs.push({r:row, ht:18, cells:[inlineStrCell(`A${row}`,"INFORME DE DONACION",3)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+
+  // director info - 3 separate short lines, FECHA on the last one
+  rowDefs.push({r:row, ht:14, cells:[inlineStrCell(`A${row}`, DON_DIRECTOR, 0)]});
+  row++;
+  rowDefs.push({r:row, ht:14, cells:[inlineStrCell(`A${row}`, DON_CARGO, 0)]});
+  row++;
+  rowDefs.push({r:row, ht:14, cells:[
+    inlineStrCell(`A${row}`, DON_ORG, 0),
+    inlineStrCell(`D${row}`, "FECHA:", 5),
+    inlineStrCell(`F${row}`, formatFechaDisplay(donState.fecha), 0)
+  ]});
+  merges.push(`D${row}:E${row}`);
+  row++;
+
+  const infoRows = [
+    ["Nombre del Colectivo Familiar:", "San José Obrero"],
+    ["Numero de Convenio:", DON_CONVENIO],
+    ["Nombre del Representante del Colectivo:", DON_REPRESENTANTE],
+    ["Numero de Cedula:", DON_CEDULA],
+    ["Municipio:", DON_MUNICIPIO],
+    ["Correo:", DON_CORREO],
+    ["Telefono:", DON_TELEFONO],
+    ["Periodo de informe:", donState.periodo]
+  ];
+  infoRows.forEach(([label, value])=>{
+    rowDefs.push({r:row, ht:14, cells:[
+      inlineStrCell(`A${row}`, label, 5),
+      inlineStrCell(`B${row}`, value, 0)
+    ]});
+    merges.push(`B${row}:F${row}`);
+    row++;
+  });
+
+  rowDefs.push({r:row, ht:18, cells:[inlineStrCell(`A${row}`,"DETALLE",3)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+
+  const leftColLabel = book.kgTotalLabel || "CANTIDAD DE KG";
+  const headerRow = row;
+  rowDefs.push({r:headerRow, ht:34, cells:[
+    inlineStrCell(`A${headerRow}`, leftColLabel, 6),
+    inlineStrCell(`B${headerRow}`, book.kgColLabel, 6),
+    inlineStrCell(`D${headerRow}`, "CANTIDAD DE BENEFICIARIOS FINALES", 6)
+  ]});
+  merges.push(`B${headerRow}:C${headerRow}`);
+  merges.push(`D${headerRow}:F${headerRow}`);
+  row++;
+
+  const firstDataRow = row;
+  const n2 = donState.roster.length;
+  donState.roster.forEach((p, idx)=>{
+    const r = row;
+    const cells = [
+      inlineStrCell(`B${r}`, p.name, 7),
+      inlineStrCell(`C${r}`, `${p.kg}kg`, 8)
+    ];
+    if(idx===0){
+      cells.push(inlineStrCell(`A${r}`, book.kgTotalLabel ? String(totalKg) : `${totalKg}kg`, 8));
+      cells.push(inlineStrCell(`D${r}`, String(donState.beneficiarios), 8));
+    }
+    rowDefs.push({r, ht:14, cells});
+    row++;
+  });
+  if(n2>1){
+    merges.push(`A${firstDataRow}:A${firstDataRow+n2-1}`);
+    merges.push(`D${firstDataRow}:F${firstDataRow+n2-1}`);
+  } else if(n2===1){
+    merges.push(`D${firstDataRow}:F${firstDataRow}`);
+  }
+
+  rowDefs.push({r:row, ht:30, cells:[inlineStrCell(`A${row}`,"¿DE QUE FORMA AYUDO EL PAQUETE DE ALIMENTO DE RESCATES Y BIENES NO ALMENTOS A LA FAMILIA ?",3)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+  rowDefs.push({r:row, ht:150, cells:[inlineStrCell(`A${row}`, DON_PARRAFO, 4)]});
+  merges.push(`A${row}:F${row}`);
+  row++;
+  row++; // spacer
+  rowDefs.push({r:row, ht:16, cells:[inlineStrCell(`B${row}`,"Firma del delegado",1)]});
+  merges.push(`B${row}:E${row}`);
+  const lastRow = row;
+
+  const colsXml = `<cols><col min="1" max="1" width="35.4" customWidth="1"/><col min="2" max="2" width="26.1" customWidth="1"/><col min="3" max="3" width="5.9" customWidth="1"/><col min="4" max="4" width="9.1" customWidth="1"/><col min="5" max="5" width="3.1" customWidth="1"/><col min="6" max="6" width="13.1" customWidth="1"/></cols>`;
+
+  const logoW=64, logoH=55;
+  const imageAnchors = [{col0:0, row0:0, cx:logoW*EMU_PER_PX, cy:logoH*EMU_PER_PX, blob:base64ToBytes(LOGO_BASE64), isLogo:true}];
+
+  const sheetRowsXml = rowDefs.map(rd=>`<row r="${rd.r}" ht="${rd.ht}" customHeight="1">${rd.cells.join("")}</row>`).join("");
+  const mergesXml = merges.map(m=>`<mergeCell ref="${m}"/>`).join("");
+
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<dimension ref="A1:F${lastRow}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+${colsXml}
+<sheetData>${sheetRowsXml}</sheetData>
+<mergeCells count="${merges.length}">${mergesXml}</mergeCells>
+<pageMargins left="0.3" right="0.3" top="0.3" bottom="0.3" header="0.2" footer="0.2"/>
+<pageSetup paperSize="1" fitToWidth="1" fitToHeight="0" orientation="portrait"/>
+<drawing r:id="rId1"/>
+</worksheet>`;
+
+  const sheetRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>`;
+
+  const drawingAnchorsXml = [];
+  const drawingRelsList = [];
+  imageAnchors.forEach((a, idx)=>{
+    const i = idx+1;
+    const rid = `rId${i}`;
+    drawingRelsList.push(`<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${i}.png"/>`);
+    drawingAnchorsXml.push(`<xdr:oneCellAnchor>
+<xdr:from><xdr:col>${a.col0}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${a.row0}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
+<xdr:ext cx="${Math.round(a.cx)}" cy="${Math.round(a.cy)}"/>
+<xdr:pic>
+<xdr:nvPicPr><xdr:cNvPr id="${i+1}" name="Picture ${i}"/><xdr:cNvPicPr/></xdr:nvPicPr>
+<xdr:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>
+<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${Math.round(a.cx)}" cy="${Math.round(a.cy)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>
+</xdr:pic>
+<xdr:clientData/>
+</xdr:oneCellAnchor>`);
+  });
+
+  const drawingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+${drawingAnchorsXml.join("")}
+</xdr:wsDr>`;
+
+  const drawingRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${drawingRelsList.join("")}
+</Relationships>`;
+
+  zip.file("[Content_Types].xml", contentTypes);
+  zip.file("_rels/.rels", rootRels);
+  zip.file("docProps/core.xml", coreXml);
+  zip.file("docProps/app.xml", appXml);
+  zip.file("xl/workbook.xml", workbookXml);
+  zip.file("xl/_rels/workbook.xml.rels", workbookRels);
+  zip.file("xl/styles.xml", stylesXml);
+  zip.file("xl/worksheets/sheet1.xml", sheetXml);
+  zip.file("xl/worksheets/_rels/sheet1.xml.rels", sheetRels);
+  zip.file("xl/drawings/drawing1.xml", drawingXml);
+  zip.file("xl/drawings/_rels/drawing1.xml.rels", drawingRelsXml);
+  imageAnchors.forEach((a, idx)=>{
+    zip.file(`xl/media/image${idx+1}.png`, a.blob);
+  });
+
+  return await zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+let lastDonBlob = null;
+async function getDonationWorkbookBlobCached(){
+  lastDonBlob = await buildDonationWorkbookBlob();
+  return lastDonBlob;
+}
+
+document.getElementById("donDownloadXlsxBtn").addEventListener("click", async (e)=>{
+  const btn = e.currentTarget;
+  const original = btn.textContent;
+  btn.textContent = "Generando...";
+  btn.disabled = true;
+  try{
+    const blob = await getDonationWorkbookBlobCached();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const fname = `Informe_Donacion_${donState.bookKey}_${donState.fecha || "reporte"}.xlsx`;
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+
+async function shareDonationWorkbook(){
+  const blob = await getDonationWorkbookBlobCached();
+  const fname = `Informe_Donacion_${donState.bookKey}_${donState.fecha || "reporte"}.xlsx`;
+  const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:"Informe de Donación", text:"Informe de donación - San José Obrero"});
+      return true;
+    }catch(err){ return false; }
+  }
+  return false;
+}
+
+document.getElementById("donShareBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("donShareNote");
+  const ok = await shareDonationWorkbook();
+  if(!ok){
+    note.textContent = "Tu navegador no permite compartir archivos directamente. Descarga el Excel y compártelo desde tu gestor de archivos.";
+  }
+});
+
+document.getElementById("donDriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("donShareNote");
+  const shared = await shareDonationWorkbook();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("donDownloadXlsxBtn").click();
+    window.open("https://drive.google.com/drive/my-drive", "_blank");
+  }
+});
+
+document.getElementById("donOnedriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("donShareNote");
+  const shared = await shareDonationWorkbook();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("donDownloadXlsxBtn").click();
+    window.open("https://onedrive.live.com/", "_blank");
+  }
+});
+
+/* =======================================================================
+   ===================  SOLICITUD DE DONACIÓN  ===========================
+   ======================================================================= */
+
+const SOL_TIPOS = {
+  personas: {
+    label: "Personas",
+    desc: "Alimentos y bienes para consumo humano",
+    available: true
+  },
+  animales: {
+    label: "Animales",
+    desc: "Próximamente — falta la plantilla original",
+    available: false
+  }
+};
+
+const SOL_HEADER_LINES = [
+  "Colectivo Familiar: San Jose Obrero",
+  "Convenio #: COF160424-0072",
+  "Contactos: celular: 86215307",
+  "correo: flores.johanna30junio@gmail.com",
+  "Dirección: CMCA, Urbaite, iglesia Católica 100m Sur, 400m Este"
+];
+
+const SOL_NOTA = "Nota: Es importante destacar que los bienes solicitados no constituyen renta gravable del Impuesto sobre la Renta (IR) para el beneficiario debido a que los mismos representan productos de salida no aptos para la venta debido a su pronta fecha de expiración, desperfectos mecánicos o vicios ocultos conforme a los arts. 8.8, 10.15 y demás artículos relacionados establecidos en la Ley 842 Ley de Derechos del Consumidor; y por no cumplir con lo establecido en el literal g) del art. 4 de la Ley 822 Ley de Concertación Tributaria reformado por la Ley 891, y el art. 6.7 del Decreto 01-2013 Reglamento de la Ley 822. Estos productos no serán destinados para la venta, sino única y exclusivamente para el cumplimiento del giro de la organización; de contravenir esta resolución, el solicitante asume el pago de los tributos correspondientes, incluyendo sus repercusiones.";
+
+const solState = {
+  tipo: null,
+  fecha: "",
+  fechaBlank: false,
+  kg: 800,
+  familias: 20,
+  personas: 76,
+  mes: ""
+};
+
+function buildTipoChoicesUI(){
+  const container = document.getElementById("tipoChoices");
+  container.innerHTML = "";
+  Object.keys(SOL_TIPOS).forEach(key=>{
+    const t = SOL_TIPOS[key];
+    const card = document.createElement("div");
+    card.className = "tipo-card" + (t.available ? "" : " disabled");
+    card.id = `tipo-${key}`;
+    card.innerHTML = `<div class="ttitle">${t.label}</div><div class="desc">${t.desc}</div>`;
+    if(t.available){
+      card.addEventListener("click", ()=> selectTipo(key));
+    }
+    container.appendChild(card);
+  });
+}
+
+async function selectTipo(key){
+  solState.tipo = key;
+  Object.keys(SOL_TIPOS).forEach(k=>{
+    document.getElementById(`tipo-${k}`).classList.toggle("selected", k===key);
+  });
+
+  // try restore draft
+  try{
+    const res = await window.storage.get(`solicitud:draft:${key}`, false);
+    if(res && res.value){
+      const d = JSON.parse(res.value);
+      Object.assign(solState, d);
+    }
+  }catch(e){ /* no draft yet */ }
+
+  document.getElementById("solFechaInput").value = solState.fecha || "";
+  document.getElementById("solFechaBlankCheck").checked = !!solState.fechaBlank;
+  document.getElementById("solKgInput").value = solState.kg;
+  document.getElementById("solFamiliasInput").value = solState.familias;
+  document.getElementById("solPersonasInput").value = solState.personas;
+  document.getElementById("solMesInput").value = solState.mes || monthNameEs(solState.fecha) || "";
+
+  document.getElementById("solicitudFormSection").style.display = "block";
+  document.getElementById("solReportSection").style.display = "none";
+  document.getElementById("solicitudFormSection").scrollIntoView({behavior:"smooth"});
+}
+
+function saveSolDraft(){
+  if(!solState.tipo) return;
+  storageSet(`solicitud:draft:${solState.tipo}`, JSON.stringify(solState));
+}
+
+document.getElementById("solFechaInput").addEventListener("change", (e)=>{
+  solState.fecha = e.target.value;
+  if(!document.getElementById("solMesInput").dataset.userEdited){
+    solState.mes = monthNameEs(solState.fecha);
+    document.getElementById("solMesInput").value = solState.mes;
+  }
+  saveSolDraft();
+});
+document.getElementById("solFechaBlankCheck").addEventListener("change", (e)=>{
+  solState.fechaBlank = e.target.checked;
+  document.getElementById("solFechaInput").disabled = e.target.checked;
+  saveSolDraft();
+});
+document.getElementById("solKgInput").addEventListener("input", (e)=>{
+  solState.kg = Number(e.target.value) || 0;
+  saveSolDraft();
+});
+document.getElementById("solFamiliasInput").addEventListener("input", (e)=>{
+  solState.familias = Number(e.target.value) || 0;
+  saveSolDraft();
+});
+document.getElementById("solPersonasInput").addEventListener("input", (e)=>{
+  solState.personas = Number(e.target.value) || 0;
+  saveSolDraft();
+});
+document.getElementById("solMesInput").addEventListener("input", (e)=>{
+  solState.mes = e.target.value;
+  e.target.dataset.userEdited = "1";
+  saveSolDraft();
+});
+
+document.getElementById("solClearBtn").addEventListener("click", async ()=>{
+  if(!confirm("¿Restablecer los valores de esta solicitud?")) return;
+  solState.fecha = ""; solState.fechaBlank = false; solState.kg = 800;
+  solState.familias = 20; solState.personas = 76; solState.mes = "";
+  document.getElementById("solFechaInput").value = "";
+  document.getElementById("solFechaInput").disabled = false;
+  document.getElementById("solFechaBlankCheck").checked = false;
+  document.getElementById("solKgInput").value = 800;
+  document.getElementById("solFamiliasInput").value = 20;
+  document.getElementById("solPersonasInput").value = 76;
+  document.getElementById("solMesInput").value = "";
+  document.getElementById("solMesInput").dataset.userEdited = "";
+  if(solState.tipo) await storageDelete(`solicitud:draft:${solState.tipo}`);
+});
+
+buildTipoChoicesUI();
+
+function solFechaDisplay(){
+  if(solState.fechaBlank || !solState.fecha) return "";
+  return formatFechaDisplay(solState.fecha);
+}
+
+function buildSolicitudReportHTML(){
+  const headHtml = SOL_HEADER_LINES.map(l=>`<div>${xmlEscape(l)}</div>`).join("");
+  const fechaTxt = solFechaDisplay();
+  const par1 = `En nombre del Colectivo familiar, San Jose Obrero, solicito donación en especie de ${solState.kg} Kg de alimentos y bienes no alimentarios de rescate no aptos para la venta, pero sí, para rápido uso y consumo humano. Los productos se distribuirán entre ${solState.familias} familias que aglutinan a ${solState.personas} personas. Su donación complementará los requerimientos mensuales de la ingesta alimentaria, así como mejorará la calidad de vida en su higiene y aseo personal.`;
+  const par2 = `El Colectivo asumirá el costo de transporte, cargue y descargue, así como la rendición de cuentas con entrega de reportes cada vez que se haga la entrega de donación y que indique la cantidad de kilos recibidos por cada donación, la población beneficiada y seis fotos que demuestren la distribución. Somos responsables ambientalmente de cuidar y re uso todos los materiales de empaque.`;
+  const par3 = `Esta solicitud corresponde al mes de ${xmlEscape(solState.mes||"")}, para que sea programada en el plan de despacho del Banco de Alimentos. Estoy consciente que su respuesta a mi solicitud, dependerá de la disponibilidad de la cantidad de productos y frecuencia que tenga para donar, estaré al pendiente de su llamado.`;
+
+  return `
+    <div class="shead">${headHtml}</div>
+    <div class="sfecha">${xmlEscape(fechaTxt)}</div>
+    <p>Sr. Edgard Mendieta.<br>Director Ejecutivo<br>Banco de Alimentos de Nicaragua</p>
+    <p>Estimado señor;</p>
+    <p>${par1}</p>
+    <p>${par2}</p>
+    <p>${par3}</p>
+    <p>Agradeciendo su respuesta a mi solicitud, le saludo.</p>
+    <p>Atentamente,</p>
+    <p style="margin-top:40px;">Delegado Colectivo Familiar: Yojana Maria Flores Barrios</p>
+    <p>Cédula # :570-300683-0000R</p>
+    <p style="margin-top:30px;">CC. solicitante</p>
+    <div class="snote">${SOL_NOTA}</div>
+  `;
+}
+
+document.getElementById("solGenerateBtn").addEventListener("click", ()=>{
+  const card = document.getElementById("solReportCard");
+  card.innerHTML = buildSolicitudReportHTML();
+  document.getElementById("solReportSection").style.display = "block";
+  document.getElementById("solReportSection").scrollIntoView({behavior:"smooth"});
+});
+
+document.getElementById("solPrintBtn").addEventListener("click", ()=> window.print());
+
+/* ---------- Solicitud DOCX generator ---------- */
+function wEsc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function wp(text, opts){
+  opts = opts || {};
+  let ppr = "<w:pPr>";
+  if(opts.align) ppr += `<w:jc w:val="${opts.align}"/>`;
+  if(opts.spacingAfter !== undefined) ppr += `<w:spacing w:after="${opts.spacingAfter}"/>`;
+  let rprPiece = "";
+  if(opts.italic || opts.size){
+    rprPiece = "<w:rPr>";
+    if(opts.italic) rprPiece += "<w:i/>";
+    if(opts.size) rprPiece += `<w:sz w:val="${opts.size}"/><w:szCs w:val="${opts.size}"/>`;
+    rprPiece += "</w:rPr>";
+  }
+  ppr += rprPiece + "</w:pPr>";
+  if(!text) return `<w:p>${ppr}</w:p>`;
+  const run = `<w:r>${rprPiece}<w:t xml:space="preserve">${wEsc(text)}</w:t></w:r>`;
+  return `<w:p>${ppr}${run}</w:p>`;
+}
+
+async function buildSolicitudDocxBlob(){
+  const zip = new JSZip();
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const coreXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title>Solicitud de Donacion</dc:title>
+<dc:creator>App San Jose Obrero</dc:creator>
+</cp:coreProperties>`;
+
+  const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+<Application>App San Jose Obrero</Application>
+</Properties>`;
+
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
+</Relationships>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults>
+<w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="es-NI"/></w:rPr></w:rPrDefault>
+<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault>
+</w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
+<w:style w:type="character" w:default="1" w:styleId="DefaultParagraphFont"><w:name w:val="Default Paragraph Font"/></w:style>
+</w:styles>`;
+
+  const headerParas = SOL_HEADER_LINES.map(l=>wp(l, {align:"right"})).join("");
+  const headerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+${headerParas}
+</w:hdr>`;
+
+  const footerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+${wp(SOL_NOTA, {italic:true, size:18})}
+</w:ftr>`;
+
+  const par1 = `En nombre del Colectivo familiar, San Jose Obrero, solicito donación en especie de ${solState.kg} Kg de alimentos y bienes no alimentarios de rescate no aptos para la venta, pero sí, para rápido uso y consumo humano. Los productos se distribuirán entre ${solState.familias} familias que aglutinan a ${solState.personas} personas. Su donación complementará los requerimientos mensuales de la ingesta alimentaria, así como mejorará la calidad de vida en su higiene y aseo personal.`;
+  const par2 = `El Colectivo asumirá el costo de transporte, cargue y descargue, así como la rendición de cuentas con entrega de reportes cada vez que se haga la entrega de donación y que indique la cantidad de kilos recibidos por cada donación, la población beneficiada y seis fotos que demuestren la distribución. Somos responsables ambientalmente de cuidar y re uso todos los materiales de empaque.`;
+  const par3 = `Esta solicitud corresponde al mes de ${solState.mes||""}, para que sea programada en el plan de despacho del Banco de Alimentos. Estoy consciente que su respuesta a mi solicitud, dependerá de la disponibilidad de la cantidad de productos y frecuencia que tenga para donar, estaré al pendiente de su llamado.`;
+
+  const bodyParas = [
+    wp(solFechaDisplay(), {align:"right"}),
+    wp(),
+    wp("Sr. Edgard Mendieta."),
+    wp("Director Ejecutivo"),
+    wp("Banco de Alimentos de Nicaragua"),
+    wp(),
+    wp("Estimado señor;"),
+    wp(),
+    wp(par1),
+    wp(),
+    wp(par2),
+    wp(),
+    wp(par3),
+    wp(),
+    wp("Agradeciendo su respuesta a mi solicitud, le saludo."),
+    wp(),
+    wp("Atentamente,"),
+    wp(), wp(), wp(),
+    wp("Delegado Colectivo Familiar: Yojana Maria Flores Barrios"),
+    wp(),
+    wp("Cédula # :570-300683-0000R"),
+    wp(), wp(), wp(),
+    wp("CC. solicitante"),
+  ].join("");
+
+  const sectPr = '<w:sectPr>'
+    + '<w:headerReference w:type="default" r:id="rId2"/>'
+    + '<w:footerReference w:type="default" r:id="rId3"/>'
+    + '<w:pgSz w:w="12240" w:h="15840"/>'
+    + '<w:pgMar w:top="1417" w:right="1701" w:bottom="1417" w:left="1701" w:header="708" w:footer="708" w:gutter="0"/>'
+    + '</w:sectPr>';
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<w:body>${bodyParas}${sectPr}</w:body>
+</w:document>`;
+
+  zip.file("[Content_Types].xml", contentTypes);
+  zip.file("_rels/.rels", rootRels);
+  zip.file("docProps/core.xml", coreXml);
+  zip.file("docProps/app.xml", appXml);
+  zip.file("word/document.xml", documentXml);
+  zip.file("word/_rels/document.xml.rels", docRels);
+  zip.file("word/styles.xml", stylesXml);
+  zip.file("word/header1.xml", headerXml);
+  zip.file("word/footer1.xml", footerXml);
+
+  return await zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+}
+
+let lastSolBlob = null;
+async function getSolicitudDocxBlobCached(){
+  lastSolBlob = await buildSolicitudDocxBlob();
+  return lastSolBlob;
+}
+
+document.getElementById("solDownloadDocxBtn").addEventListener("click", async (e)=>{
+  const btn = e.currentTarget;
+  const original = btn.textContent;
+  btn.textContent = "Generando...";
+  btn.disabled = true;
+  try{
+    const blob = await getSolicitudDocxBlobCached();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const fname = `Solicitud_Donacion_${solState.tipo}_${solState.mes || "reporte"}.docx`;
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+
+async function shareSolicitudDocx(){
+  const blob = await getSolicitudDocxBlobCached();
+  const fname = `Solicitud_Donacion_${solState.tipo}_${solState.mes || "reporte"}.docx`;
+  const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:"Solicitud de Donación", text:"Solicitud de donación - San José Obrero"});
+      return true;
+    }catch(err){ return false; }
+  }
+  return false;
+}
+
+document.getElementById("solShareBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("solShareNote");
+  const ok = await shareSolicitudDocx();
+  if(!ok){
+    note.textContent = "Tu navegador no permite compartir archivos directamente. Descarga el Word y compártelo desde tu gestor de archivos.";
+  }
+});
+
+document.getElementById("solDriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("solShareNote");
+  const shared = await shareSolicitudDocx();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("solDownloadDocxBtn").click();
+    window.open("https://drive.google.com/drive/my-drive", "_blank");
+  }
+});
+
+document.getElementById("solOnedriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("solShareNote");
+  const shared = await shareSolicitudDocx();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("solDownloadDocxBtn").click();
+    window.open("https://onedrive.live.com/", "_blank");
+  }
+});
+
+
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
