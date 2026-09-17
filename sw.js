@@ -1,4 +1,4 @@
-const CACHE_NAME = "sanjoseobrero-v1";
+const CACHE_NAME = "sanjoseobrero-v2";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -17,8 +17,16 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Red primero: siempre intenta traer la version mas reciente cuando hay
+// internet, y solo usa la copia guardada si el telefono esta sin conexion.
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

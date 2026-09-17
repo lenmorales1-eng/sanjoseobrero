@@ -111,6 +111,7 @@
   .btn-primary:disabled{background:#B9C9C5;box-shadow:none;cursor:not-allowed;}
   .btn-primary.choice-alt, #splash button.choice-alt{background:var(--wood);box-shadow:0 2px 0 #5C3A17;}
   .btn-primary.choice-solicitud, #splash button.choice-solicitud{background:#5B6E8C;box-shadow:0 2px 0 #3F4E66;}
+  .btn-primary.choice-aporte, #splash button.choice-aporte{background:#8A4A5B;box-shadow:0 2px 0 #62333F;}
   .btn-ghost{background:transparent;color:var(--wood);border:1px solid var(--line);}
 
   /* ---------- Report preview ---------- */
@@ -151,6 +152,8 @@
     #donReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
     #solReportSection, #solReportSection *{visibility:visible;}
     #solReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
+    #apoReportSection, #apoReportSection *{visibility:visible;}
+    #apoReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
     .result-actions,.note{display:none !important;}
     .report-card{border:none;box-shadow:none;max-width:100%;}
     .report-pair{break-inside:avoid;}
@@ -223,6 +226,21 @@
   .sol-report .sfecha{text-align:right;margin-bottom:16px;min-height:1.2em;}
   .sol-report p{margin:0 0 14px;}
   .sol-report .snote{font-size:0.72rem;font-style:italic;color:var(--muted);border-top:1px solid var(--line);margin-top:30px;padding-top:10px;text-align:justify;}
+
+  /* ---------- Aporte report preview ---------- */
+  .apo-report{font-size:0.82rem;line-height:1.5;}
+  .apo-report .ahead{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:10px;}
+  .apo-report .ahead img{width:52px;height:auto;flex:none;}
+  .apo-report .ahead .t1{font-weight:700;font-size:1.1rem;text-align:center;flex:1;}
+  .apo-report .ahead2{text-align:center;font-size:0.72rem;color:var(--muted);margin-top:4px;}
+  .apo-report .ainfo{margin-top:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .apo-report .ainfo .left{flex:1;min-width:220px;}
+  .apo-report .ainfo .right{text-align:right;font-size:0.82rem;}
+  .apo-report .aintro{margin-top:14px;font-weight:600;}
+  .apo-report table.atable{width:100%;border-collapse:collapse;margin-top:12px;font-size:0.76rem;}
+  .apo-report table.atable th{border:1px solid var(--ink);background:#F2EEE2;padding:5px;font-size:0.72rem;}
+  .apo-report table.atable td{border:1px solid var(--ink);padding:4px 6px;}
+  .apo-report .afirma{margin-top:34px;text-align:center;font-weight:700;}
 </style>
 </head>
 <body>
@@ -268,6 +286,10 @@
       Solicitud de donación
       <span>Carta para pedir alimentos o insumos para animales</span>
     </button>
+    <button id="startAporteBtn" class="btn btn-primary choice-btn choice-aporte">
+      Reporte de aportes
+      <span>Firmas y aportes en córdobas de jefes de familia</span>
+    </button>
   </div>
 </div>
 
@@ -282,21 +304,26 @@
   </div>
   <hr class="rule">
 
-  <div class="field-row">
-    <label for="fechaInput">Fecha del reporte</label>
-    <input type="date" id="fechaInput">
-  </div>
+  <h3 style="color:var(--wood);font-size:1rem;margin-bottom:4px;">Tipo de reporte</h3>
+  <div class="tipo-choices" id="photoTipoChoices"></div>
 
-  <div class="progress-wrap">
-    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-    <div class="progress-label" id="progressLabel">0 de 12 fotos cargadas</div>
-  </div>
+  <div id="photoFormSection" style="display:none;">
+    <div class="field-row">
+      <label for="fechaInput">Fecha del reporte</label>
+      <input type="date" id="fechaInput">
+    </div>
 
-  <div id="groupsContainer"></div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">0 de 12 fotos cargadas</div>
+    </div>
 
-  <div class="actions-bar">
-    <button class="btn btn-ghost" id="clearBtn">Borrar todo</button>
-    <button class="btn btn-primary" id="generateBtn">Generar reporte</button>
+    <div id="groupsContainer"></div>
+
+    <div class="actions-bar">
+      <button class="btn btn-ghost" id="clearBtn">Borrar todo</button>
+      <button class="btn btn-primary" id="generateBtn">Generar reporte</button>
+    </div>
   </div>
 
   <div id="reportSection">
@@ -403,7 +430,7 @@
       <input type="number" id="solFamiliasInput" min="0" value="20">
     </div>
     <div class="donation-field">
-      <label for="solPersonasInput">Cantidad de personas beneficiadas</label>
+      <label for="solPersonasInput" id="solPersonasLabel">Cantidad de personas beneficiadas</label>
       <input type="number" id="solPersonasInput" min="0" value="76">
     </div>
     <div class="donation-field">
@@ -430,6 +457,61 @@
   </div>
 </div>
 
+<div id="aporteApp" class="wrap" style="display:none;">
+  <a href="#" id="backFromAporte" class="back-link">← Volver al inicio</a>
+  <div class="top">
+    <img class="mini-badge" src="data:image/png;base64,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" alt="Logo Fundación Banco de Alimentos de Nicaragua" style="object-fit:contain;">
+    <div>
+      <h2>Reporte de aportes</h2>
+      <div class="org">Colectivo Familiar: San José Obrero · Firmas de jefes de familia</div>
+    </div>
+  </div>
+  <hr class="rule">
+
+  <div class="donation-field">
+    <label for="apoFechaInput">Fecha</label>
+    <input type="date" id="apoFechaInput">
+  </div>
+  <div class="donation-field">
+    <label for="apoLugarInput">Lugar</label>
+    <input type="text" id="apoLugarInput" placeholder="Ej. Teustepe-Las Cañitas">
+  </div>
+
+  <h3 style="color:var(--wood);font-size:1rem;margin-bottom:4px;">Elige el libro</h3>
+  <div class="book-choices" id="apoBookChoices"></div>
+
+  <div id="apoRosterSection" style="display:none;">
+    <h3 style="color:var(--wood);font-size:1rem;margin-bottom:4px;">Jefes de familia</h3>
+    <table class="roster-table">
+      <thead><tr><th>Nombre</th><th>Cédula</th><th>Aporte C$</th><th>Kg</th><th></th></tr></thead>
+      <tbody id="apoRosterBody"></tbody>
+    </table>
+    <button class="add-row-btn" id="apoAddRosterRowBtn">+ Agregar persona</button>
+
+    <div class="roster-summary">
+      <div>Total aportes: <strong id="apoTotalAporte">C$0</strong></div>
+      <div>Total kg: <strong id="apoTotalKg">0</strong></div>
+    </div>
+
+    <div class="actions-bar">
+      <button class="btn btn-ghost" id="apoClearBtn">Restablecer libro</button>
+      <button class="btn btn-primary" id="apoGenerateBtn">Generar reporte</button>
+    </div>
+  </div>
+
+  <div id="apoReportSection" style="display:none;margin-top:36px;">
+    <div class="report-card apo-report" id="apoReportCard"></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="apoDownloadXlsxBtn">Descargar Excel (.xlsx)</button>
+      <button class="btn btn-ghost" id="apoPrintBtn">Imprimir / Guardar PDF</button>
+      <button class="btn btn-drive" id="apoDriveBtn">Guardar en Drive</button>
+      <button class="btn btn-onedrive" id="apoOnedriveBtn">Guardar en OneDrive</button>
+      <button class="btn btn-ghost" id="apoShareBtn">Compartir</button>
+    </div>
+    <p class="note" id="apoShareNote"></p>
+  </div>
+</div>
+
 <script>
 /* ===================== Config ===================== */
 const ORG_NAME = "Fundacion Banco de Alimentos de Nicaragua";
@@ -445,7 +527,7 @@ function base64ToBytes(b64){
   return arr;
 }
 
-const SLOTS = [
+const SLOTS_PERSONAS = [
   {id:1, group:"Bahía", label:"Bahía"},
   {id:2, group:"Bahía", label:"Bahía"},
   {id:3, group:"Descarga", label:"Descarga"},
@@ -459,10 +541,32 @@ const SLOTS = [
   {id:11, group:"Entrega del producto", label:"Entrega del producto"},
   {id:12, group:"Entrega del producto", label:"Entrega del producto", fullWidth:true},
 ];
-const GROUP_ORDER = ["Bahía","Descarga","Foto grupal","Entrega del producto"];
+const GROUP_ORDER_PERSONAS = ["Bahía","Descarga","Foto grupal","Entrega del producto"];
+
+// Basado en la plantilla real de animales: 12 fotos en 6 pares (sin fotos a ancho completo)
+const SLOTS_ANIMALES = [
+  {id:1, group:"Bahía", label:"Bahía"},
+  {id:2, group:"Bahía", label:"Bahía"},
+  {id:3, group:"Descarga", label:"Descarga"},
+  {id:4, group:"Descarga", label:"Descarga"},
+  {id:5, group:"Foto grupal", label:"Foto grupal con las mascotas"},
+  {id:6, group:"Foto grupal", label:"Foto grupal con las mascotas"},
+  {id:7, group:"Alimentación", label:"Alimentación"},
+  {id:8, group:"Alimentación", label:"Alimentación"},
+  {id:9, group:"Alimentación", label:"Alimentación"},
+  {id:10, group:"Alimentación", label:"Alimentación"},
+  {id:11, group:"Alimentación", label:"Alimentación"},
+  {id:12, group:"Alimentación", label:"Alimentación"},
+];
+const GROUP_ORDER_ANIMALES = ["Bahía","Descarga","Foto grupal","Alimentación"];
+
+function activeSlots(){ return state.photoTipo === "animales" ? SLOTS_ANIMALES : SLOTS_PERSONAS; }
+function activeGroupOrder(){ return state.photoTipo === "animales" ? GROUP_ORDER_ANIMALES : GROUP_ORDER_PERSONAS; }
+function photoStorageKey(id){ return `memoria:photo:${state.photoTipo}:${id}`; }
 
 const state = {
   fecha: "",
+  photoTipo: null, // "personas" | "animales"
   photos: {} // id -> {dataURL, width, height, blob}
 };
 
@@ -518,8 +622,8 @@ function dataURLToUint8Array(dataURL){
 function buildGroupsUI(){
   const container = document.getElementById("groupsContainer");
   container.innerHTML = "";
-  GROUP_ORDER.forEach(groupName=>{
-    const slotsInGroup = SLOTS.filter(s=>s.group===groupName);
+  activeGroupOrder().forEach(groupName=>{
+    const slotsInGroup = activeSlots().filter(s=>s.group===groupName);
     const groupDiv = document.createElement("div");
     groupDiv.className = "group";
     const h3 = document.createElement("h3");
@@ -552,7 +656,7 @@ function buildSlotEl(slot){
     state.photos[slot.id] = result;
     renderSlotContent(slot.id, div);
     updateProgress();
-    storageSet(`memoria:photo:${slot.id}`, result.dataURL);
+    storageSet(photoStorageKey(slot.id), result.dataURL);
   });
   div.addEventListener("click", (e)=>{
     if(e.target.classList.contains("remove")) return;
@@ -562,7 +666,7 @@ function buildSlotEl(slot){
 }
 
 function renderSlotContent(slotId, elOverride){
-  const slot = SLOTS.find(s=>s.id===slotId);
+  const slot = activeSlots().find(s=>s.id===slotId);
   const el = elOverride || document.getElementById(`slot-${slotId}`);
   const inner = el.querySelector(".slot-inner");
   const photo = state.photos[slotId];
@@ -576,7 +680,7 @@ function renderSlotContent(slotId, elOverride){
     inner.querySelector(".remove").addEventListener("click", (e)=>{
       e.stopPropagation();
       delete state.photos[slotId];
-      storageDelete(`memoria:photo:${slotId}`);
+      storageDelete(photoStorageKey(slotId));
       renderSlotContent(slotId, el);
       updateProgress();
     });
@@ -606,15 +710,16 @@ function formatFechaDisplay(iso){
 
 function buildReportHTML(){
   const fecha = state.fecha;
+  const slots = activeSlots();
   let pairsHtml = "";
   let i = 0;
-  while(i < SLOTS.length){
-    const a = SLOTS[i];
+  while(i < slots.length){
+    const a = slots[i];
     if(a.fullWidth){
       pairsHtml += `<div class="report-pair full">${reportPhotoCell(a)}</div>`;
       i += 1;
     } else {
-      const b = SLOTS[i+1];
+      const b = slots[i+1];
       pairsHtml += `<div class="report-pair">${reportPhotoCell(a)}${reportPhotoCell(b)}</div>`;
       i += 2;
     }
@@ -749,8 +854,9 @@ async function buildWorkbookBlob(){
   let si = 0;
   const logoW = 64, logoH = 55;
   imageAnchors.push({col0:0, row0:0, cx:logoW*EMU_PER_PX, cy:logoH*EMU_PER_PX, blob:base64ToBytes(LOGO_BASE64), isLogo:true});
-  while(si < SLOTS.length){
-    const a = SLOTS[si];
+  const slots = activeSlots();
+  while(si < slots.length){
+    const a = slots[si];
 
     if(a.fullWidth){
       const labelRow = curRow;
@@ -776,7 +882,7 @@ async function buildWorkbookBlob(){
     }
 
     const left = a;
-    const right = SLOTS[si+1];
+    const right = slots[si+1];
     const leftPhoto = state.photos[left.id];
     const rightPhoto = state.photos[right.id];
 
@@ -915,8 +1021,50 @@ document.getElementById("backFromSolicitud").addEventListener("click", (e)=>{
   document.getElementById("solicitudApp").style.display = "none";
   document.getElementById("splash").style.display = "flex";
 });
+document.getElementById("startAporteBtn").addEventListener("click", ()=>{
+  document.getElementById("splash").style.display = "none";
+  document.getElementById("aporteApp").style.display = "block";
+});
+document.getElementById("backFromAporte").addEventListener("click", (e)=>{
+  e.preventDefault();
+  document.getElementById("aporteApp").style.display = "none";
+  document.getElementById("splash").style.display = "flex";
+});
 
-buildGroupsUI();
+function buildPhotoTipoChoicesUI(){
+  const container = document.getElementById("photoTipoChoices");
+  container.innerHTML = "";
+  const tipos = [
+    {key:"personas", label:"Personas", desc:"Bahía, descarga, grupal y entrega del producto"},
+    {key:"animales", label:"Animales", desc:"Bahía, descarga, grupal y alimentación de mascotas"}
+  ];
+  tipos.forEach(t=>{
+    const card = document.createElement("div");
+    card.className = "tipo-card";
+    card.id = `phototipo-${t.key}`;
+    card.innerHTML = `<div class="ttitle">${t.label}</div><div class="desc">${t.desc}</div>`;
+    card.addEventListener("click", ()=> selectPhotoTipo(t.key));
+    container.appendChild(card);
+  });
+}
+
+async function selectPhotoTipo(tipo){
+  const changingTipo = state.photoTipo !== tipo;
+  state.photoTipo = tipo;
+  document.querySelectorAll("[id^='phototipo-']").forEach(el=>{
+    el.classList.toggle("selected", el.id === `phototipo-${tipo}`);
+  });
+  if(changingTipo){
+    state.photos = {};
+  }
+  buildGroupsUI();
+  document.getElementById("photoFormSection").style.display = "block";
+  document.getElementById("reportSection").style.display = "none";
+  await restorePhotoDraft();
+  document.getElementById("photoFormSection").scrollIntoView({behavior:"smooth"});
+}
+
+buildPhotoTipoChoicesUI();
 
 document.getElementById("fechaInput").addEventListener("change", (e)=>{
   state.fecha = e.target.value;
@@ -928,7 +1076,7 @@ document.getElementById("clearBtn").addEventListener("click", async ()=>{
   state.photos = {};
   state.fecha = "";
   document.getElementById("fechaInput").value = "";
-  SLOTS.forEach(s=>{ renderSlotContent(s.id); storageDelete(`memoria:photo:${s.id}`); });
+  activeSlots().forEach(s=>{ storageDelete(photoStorageKey(s.id)); renderSlotContent(s.id); });
   storageDelete("memoria:fecha");
   updateProgress();
   document.getElementById("reportSection").style.display = "none";
@@ -1014,19 +1162,15 @@ document.getElementById("onedriveBtn").addEventListener("click", async ()=>{
 });
 
 /* ===================== Restore draft from storage ===================== */
-(async function restoreDraft(){
-  const fecha = await storageGet("memoria:fecha");
+async function restorePhotoDraft(){
+  const fecha = await storageGet("memoria:fecha").catch(()=>null);
   if(fecha && fecha.value){
     state.fecha = fecha.value;
     document.getElementById("fechaInput").value = fecha.value;
   }
-  for(const slot of SLOTS){
-    const res = await storageGet(`memoria:photo:${slot.id}`).catch(()=>null);
-  }
-  // sequential restore with individual error handling (keys may not exist)
-  for(const slot of SLOTS){
+  for(const slot of activeSlots()){
     try{
-      const res = await window.storage.get(`memoria:photo:${slot.id}`, false);
+      const res = await window.storage.get(photoStorageKey(slot.id), false);
       if(res && res.value){
         const dataURL = res.value;
         const dims = await getImageDims(dataURL);
@@ -1037,7 +1181,7 @@ document.getElementById("onedriveBtn").addEventListener("click", async ()=>{
     }catch(e){ /* key not found, ignore */ }
   }
   updateProgress();
-})();
+}
 
 function getImageDims(dataURL){
   return new Promise((resolve)=>{
@@ -1649,22 +1793,46 @@ const SOL_TIPOS = {
   personas: {
     label: "Personas",
     desc: "Alimentos y bienes para consumo humano",
-    available: true
+    available: true,
+    headerLines: [
+      "Colectivo Familiar: San Jose Obrero",
+      "Convenio #: COF160424-0072",
+      "Contactos: celular: 86215307",
+      "correo: flores.johanna30junio@gmail.com",
+      "Dirección: CMCA, Urbaite, iglesia Católica 100m Sur, 400m Este"
+    ],
+    beneficiarioLabel: "Cantidad de personas beneficiadas",
+    beneficiarioWord: "personas",
+    defaultBenef: 76,
+    firmaLines: [
+      (s)=>`Delegado Colectivo Familiar: ${s.delegado}`,
+      (s)=>`Cédula # :${s.cedula}`
+    ]
   },
   animales: {
     label: "Animales",
-    desc: "Próximamente — falta la plantilla original",
-    available: false
+    desc: "Alimento para mascotas de rescate",
+    available: true,
+    headerLines: [
+      "Colectivo Familiar: San José Obrero",
+      "Convenio #:180424-0072",
+      "Contactos: 86215307",
+      "correo: flores.johanna30junio@gmail.com",
+      "Dirección: CMCA, Urbaite, Iglesia Católica 100mts S, 400mts E."
+    ],
+    beneficiarioLabel: "Cantidad de mascotas beneficiadas",
+    beneficiarioWord: "mascotas",
+    defaultBenef: 18,
+    firmaLines: [
+      (s)=>`Nombre del Delegado: ${s.delegado}`,
+      (s)=>`Colectivo Familiar: San Jose Obrero`,
+      (s)=>`Cédula: ${s.cedula}`
+    ]
   }
 };
 
-const SOL_HEADER_LINES = [
-  "Colectivo Familiar: San Jose Obrero",
-  "Convenio #: COF160424-0072",
-  "Contactos: celular: 86215307",
-  "correo: flores.johanna30junio@gmail.com",
-  "Dirección: CMCA, Urbaite, iglesia Católica 100m Sur, 400m Este"
-];
+const SOL_DELEGADO = "Yojana María Flores Barrios";
+const SOL_CEDULA = "570-300683-0000R";
 
 const SOL_NOTA = "Nota: Es importante destacar que los bienes solicitados no constituyen renta gravable del Impuesto sobre la Renta (IR) para el beneficiario debido a que los mismos representan productos de salida no aptos para la venta debido a su pronta fecha de expiración, desperfectos mecánicos o vicios ocultos conforme a los arts. 8.8, 10.15 y demás artículos relacionados establecidos en la Ley 842 Ley de Derechos del Consumidor; y por no cumplir con lo establecido en el literal g) del art. 4 de la Ley 822 Ley de Concertación Tributaria reformado por la Ley 891, y el art. 6.7 del Decreto 01-2013 Reglamento de la Ley 822. Estos productos no serán destinados para la venta, sino única y exclusivamente para el cumplimiento del giro de la organización; de contravenir esta resolución, el solicitante asume el pago de los tributos correspondientes, incluyendo sus repercusiones.";
 
@@ -1675,7 +1843,9 @@ const solState = {
   kg: 800,
   familias: 20,
   personas: 76,
-  mes: ""
+  mes: "",
+  delegado: SOL_DELEGADO,
+  cedula: SOL_CEDULA
 };
 
 function buildTipoChoicesUI(){
@@ -1684,21 +1854,28 @@ function buildTipoChoicesUI(){
   Object.keys(SOL_TIPOS).forEach(key=>{
     const t = SOL_TIPOS[key];
     const card = document.createElement("div");
-    card.className = "tipo-card" + (t.available ? "" : " disabled");
+    card.className = "tipo-card";
     card.id = `tipo-${key}`;
     card.innerHTML = `<div class="ttitle">${t.label}</div><div class="desc">${t.desc}</div>`;
-    if(t.available){
-      card.addEventListener("click", ()=> selectTipo(key));
-    }
+    card.addEventListener("click", ()=> selectTipo(key));
     container.appendChild(card);
   });
 }
 
 async function selectTipo(key){
+  const changingTipo = solState.tipo !== key;
   solState.tipo = key;
+  const cfg = SOL_TIPOS[key];
   Object.keys(SOL_TIPOS).forEach(k=>{
     document.getElementById(`tipo-${k}`).classList.toggle("selected", k===key);
   });
+
+  if(changingTipo){
+    solState.fecha = ""; solState.fechaBlank = false;
+    solState.kg = 800; solState.familias = 20;
+    solState.personas = cfg.defaultBenef;
+    solState.mes = ""; solState.delegado = SOL_DELEGADO; solState.cedula = SOL_CEDULA;
+  }
 
   // try restore draft
   try{
@@ -1709,7 +1886,9 @@ async function selectTipo(key){
     }
   }catch(e){ /* no draft yet */ }
 
+  document.getElementById("solPersonasLabel").textContent = cfg.beneficiarioLabel;
   document.getElementById("solFechaInput").value = solState.fecha || "";
+  document.getElementById("solFechaInput").disabled = !!solState.fechaBlank;
   document.getElementById("solFechaBlankCheck").checked = !!solState.fechaBlank;
   document.getElementById("solKgInput").value = solState.kg;
   document.getElementById("solFamiliasInput").value = solState.familias;
@@ -1759,14 +1938,16 @@ document.getElementById("solMesInput").addEventListener("input", (e)=>{
 
 document.getElementById("solClearBtn").addEventListener("click", async ()=>{
   if(!confirm("¿Restablecer los valores de esta solicitud?")) return;
+  const cfg = SOL_TIPOS[solState.tipo] || SOL_TIPOS.personas;
   solState.fecha = ""; solState.fechaBlank = false; solState.kg = 800;
-  solState.familias = 20; solState.personas = 76; solState.mes = "";
+  solState.familias = 20; solState.personas = cfg.defaultBenef; solState.mes = "";
+  solState.delegado = SOL_DELEGADO; solState.cedula = SOL_CEDULA;
   document.getElementById("solFechaInput").value = "";
   document.getElementById("solFechaInput").disabled = false;
   document.getElementById("solFechaBlankCheck").checked = false;
   document.getElementById("solKgInput").value = 800;
   document.getElementById("solFamiliasInput").value = 20;
-  document.getElementById("solPersonasInput").value = 76;
+  document.getElementById("solPersonasInput").value = cfg.defaultBenef;
   document.getElementById("solMesInput").value = "";
   document.getElementById("solMesInput").dataset.userEdited = "";
   if(solState.tipo) await storageDelete(`solicitud:draft:${solState.tipo}`);
@@ -1779,25 +1960,37 @@ function solFechaDisplay(){
   return formatFechaDisplay(solState.fecha);
 }
 
-function buildSolicitudReportHTML(){
-  const headHtml = SOL_HEADER_LINES.map(l=>`<div>${xmlEscape(l)}</div>`).join("");
-  const fechaTxt = solFechaDisplay();
+function buildSolicitudParagraphs(cfg){
+  if(solState.tipo === "animales"){
+    const par1 = `En nombre del Colectivo familiar, San José Obrero, solicito donación en especie de ${solState.kg} Kg de alimentos para mascotas de rescate no aptos para la venta, pero sí, para rápido uso y consumo animal. Los productos se distribuirán entre ${solState.familias} familias que aglutinan a ${solState.personas} mascotas. Su donación complementará los requerimientos mensuales de la ingesta alimentaria, así como mejorará la calidad de vida.`;
+    const par2 = `El Colectivo asumirá el costo de transporte, cargue y descargue, así como la rendición de cuentas con entrega de reportes cada vez que se haga la entrega de donación y que indique la cantidad de kilos recibidos por cada donación, la población beneficiada y seis fotos que demuestren la distribución. Somos responsables ambientalmente de cuidar y reuso todos los materiales de empaque.`;
+    const par3 = `Esta solicitud corresponde al mes de ${solState.mes||""}, para que sea programada en el plan de despacho del Banco de Alimentos. Estoy consciente que su respuesta a mi solicitud, dependerá de la disponibilidad de la cantidad de productos y frecuencia que tenga para donar, estaré al pendiente de su llamado.`;
+    return [par1, par2, par3];
+  }
   const par1 = `En nombre del Colectivo familiar, San Jose Obrero, solicito donación en especie de ${solState.kg} Kg de alimentos y bienes no alimentarios de rescate no aptos para la venta, pero sí, para rápido uso y consumo humano. Los productos se distribuirán entre ${solState.familias} familias que aglutinan a ${solState.personas} personas. Su donación complementará los requerimientos mensuales de la ingesta alimentaria, así como mejorará la calidad de vida en su higiene y aseo personal.`;
   const par2 = `El Colectivo asumirá el costo de transporte, cargue y descargue, así como la rendición de cuentas con entrega de reportes cada vez que se haga la entrega de donación y que indique la cantidad de kilos recibidos por cada donación, la población beneficiada y seis fotos que demuestren la distribución. Somos responsables ambientalmente de cuidar y re uso todos los materiales de empaque.`;
-  const par3 = `Esta solicitud corresponde al mes de ${xmlEscape(solState.mes||"")}, para que sea programada en el plan de despacho del Banco de Alimentos. Estoy consciente que su respuesta a mi solicitud, dependerá de la disponibilidad de la cantidad de productos y frecuencia que tenga para donar, estaré al pendiente de su llamado.`;
+  const par3 = `Esta solicitud corresponde al mes de ${solState.mes||""}, para que sea programada en el plan de despacho del Banco de Alimentos. Estoy consciente que su respuesta a mi solicitud, dependerá de la disponibilidad de la cantidad de productos y frecuencia que tenga para donar, estaré al pendiente de su llamado.`;
+  return [par1, par2, par3];
+}
+
+function buildSolicitudReportHTML(){
+  const cfg = SOL_TIPOS[solState.tipo] || SOL_TIPOS.personas;
+  const headHtml = cfg.headerLines.map(l=>`<div>${xmlEscape(l)}</div>`).join("");
+  const fechaTxt = solFechaDisplay();
+  const [par1, par2, par3] = buildSolicitudParagraphs(cfg);
+  const firmaHtml = cfg.firmaLines.map((fn,idx)=>`<p${idx===0?' style="margin-top:40px;"':''}>${xmlEscape(fn(solState))}</p>`).join("");
 
   return `
     <div class="shead">${headHtml}</div>
     <div class="sfecha">${xmlEscape(fechaTxt)}</div>
     <p>Sr. Edgard Mendieta.<br>Director Ejecutivo<br>Banco de Alimentos de Nicaragua</p>
     <p>Estimado señor;</p>
-    <p>${par1}</p>
-    <p>${par2}</p>
-    <p>${par3}</p>
+    <p>${xmlEscape(par1)}</p>
+    <p>${xmlEscape(par2)}</p>
+    <p>${xmlEscape(par3)}</p>
     <p>Agradeciendo su respuesta a mi solicitud, le saludo.</p>
     <p>Atentamente,</p>
-    <p style="margin-top:40px;">Delegado Colectivo Familiar: Yojana Maria Flores Barrios</p>
-    <p>Cédula # :570-300683-0000R</p>
+    ${firmaHtml}
     <p style="margin-top:30px;">CC. solicitante</p>
     <div class="snote">${SOL_NOTA}</div>
   `;
@@ -1885,7 +2078,8 @@ async function buildSolicitudDocxBlob(){
 <w:style w:type="character" w:default="1" w:styleId="DefaultParagraphFont"><w:name w:val="Default Paragraph Font"/></w:style>
 </w:styles>`;
 
-  const headerParas = SOL_HEADER_LINES.map(l=>wp(l, {align:"right"})).join("");
+  const cfg = SOL_TIPOS[solState.tipo] || SOL_TIPOS.personas;
+  const headerParas = cfg.headerLines.map(l=>wp(l, {align:"right"})).join("");
   const headerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 ${headerParas}
@@ -1896,9 +2090,8 @@ ${headerParas}
 ${wp(SOL_NOTA, {italic:true, size:18})}
 </w:ftr>`;
 
-  const par1 = `En nombre del Colectivo familiar, San Jose Obrero, solicito donación en especie de ${solState.kg} Kg de alimentos y bienes no alimentarios de rescate no aptos para la venta, pero sí, para rápido uso y consumo humano. Los productos se distribuirán entre ${solState.familias} familias que aglutinan a ${solState.personas} personas. Su donación complementará los requerimientos mensuales de la ingesta alimentaria, así como mejorará la calidad de vida en su higiene y aseo personal.`;
-  const par2 = `El Colectivo asumirá el costo de transporte, cargue y descargue, así como la rendición de cuentas con entrega de reportes cada vez que se haga la entrega de donación y que indique la cantidad de kilos recibidos por cada donación, la población beneficiada y seis fotos que demuestren la distribución. Somos responsables ambientalmente de cuidar y re uso todos los materiales de empaque.`;
-  const par3 = `Esta solicitud corresponde al mes de ${solState.mes||""}, para que sea programada en el plan de despacho del Banco de Alimentos. Estoy consciente que su respuesta a mi solicitud, dependerá de la disponibilidad de la cantidad de productos y frecuencia que tenga para donar, estaré al pendiente de su llamado.`;
+  const [par1, par2, par3] = buildSolicitudParagraphs(cfg);
+  const firmaParas = cfg.firmaLines.map((fn,idx)=> idx===0 ? [wp(),wp(),wp(),wp(fn(solState))] : [wp(),wp(fn(solState))]).flat();
 
   const bodyParas = [
     wp(solFechaDisplay(), {align:"right"}),
@@ -1918,10 +2111,7 @@ ${wp(SOL_NOTA, {italic:true, size:18})}
     wp("Agradeciendo su respuesta a mi solicitud, le saludo."),
     wp(),
     wp("Atentamente,"),
-    wp(), wp(), wp(),
-    wp("Delegado Colectivo Familiar: Yojana Maria Flores Barrios"),
-    wp(),
-    wp("Cédula # :570-300683-0000R"),
+    ...firmaParas,
     wp(), wp(), wp(),
     wp("CC. solicitante"),
   ].join("");
@@ -2017,6 +2207,507 @@ document.getElementById("solOnedriveBtn").addEventListener("click", async ()=>{
   }
 });
 
+/* =======================================================================
+   ===================  REPORTE DE APORTES (FIRMAS)  =====================
+   ======================================================================= */
+
+const APO_INTRO = "Reporto listado de personas que aportan efectivo a contribuciones del Banco de Alimentos de Nicaragua y la cantidad de kilogramos entregados a cada uno.";
+const APO_DIRECTOR_BLOCK = "Estimado Lic. Edgard Mendieta. Director Ejecutivo. Fundacion Banco de Alimentos de Nicaragua.";
+const APO_COLECTIVO_BLOCK = `En nombre del Colectivo Familiar: San Jose Obrero   Numero de Convenio: ${CONVENIO}   Nombre del Representante del Colectivo: Yojana Maria Flores Barrios   Numero de Cedula: 570-300683-0000R   Telefono: ${'86215307'}`;
+
+const APO_BOOKS = {
+  "40kg": {
+    label: "40 kg", desc: "20 personas · C$360 c/u", defaultKg:40, defaultAporte:360,
+    roster: [
+      ["Yojana Maria Flores Barrios","570-300683-0000R",360,40],
+      ["Lenin Ernesto Gonzalez Morales","001-160277-0009G",360,40],
+      ["Leyla Suhey Amador Pilarte","366-310599-1000P",360,40],
+      ["Pedro Barahona Gonzalez","570-151294-0003R",360,40],
+      ["Julio José Arauz Ortega","366-190780-0001T",360,40],
+      ["Imara Isabel Pineda Alvarez","561-301100-1001G",360,40],
+      ["Manuel Condega","570-271264-0000C",360,40],
+      ["Ana Isabel Alvarez Romero","565-140755-0000D",360,40],
+      ["Lorenzo Antonio González Valerio","366-151079-0000J",360,40],
+      ["Emeregilda Ramírez","366-200769-0002G",360,40],
+      ["Juan Carlos González Sequeira","366-190378-0001D",360,40],
+      ["Ricardo Antonio López","001-210274-0038Q",360,40],
+      ["Yeison Antonio Garzo Ortiz","565-100292-0002N",360,40],
+      ["Ervin Stiven Bojorge García","361-131103-1005H",360,40],
+      ["Juan Carlos Madrigal Alemán","570-120882-0001W",360,40],
+      ["María Cristina Amador Pilarte","366-190696-0000Y",360,40],
+      ["José Santos Amador Bermúdez","366-181058-0000E",360,40],
+      ["Ismael Antonio Arauz Ramírez","366-191188-0000A",360,40],
+      ["Magdaleno Arauz Ortega","366-200563-0001M",360,40],
+      ["Eleuterio Arauz Bermúdez","366-200237-0000V",360,40]
+    ]
+  },
+  "10kg": {
+    label: "10 kg", desc: "10 personas · C$135 c/u", defaultKg:10, defaultAporte:135,
+    roster: [
+      ["Yojana Maria Flores Barrios","570-300683-0000R",135,10],
+      ["Lenin Ernesto Gonzalez Morales","001-160277-0009G",135,10],
+      ["Pedro Barahona Gonzalez","570-151294-0003R",135,10],
+      ["Julio José Arauz Ortega","366-190780-0001T",135,10],
+      ["Manuel Condega","570-271264-0000C",135,10],
+      ["Lorenzo Antonio González Valerio","366-151079-0000J",135,10],
+      ["Emeregilda Ramírez","366-200769-0002G",135,10],
+      ["María Cristina Amador Pilarte","366-190696-0000Y",135,10],
+      ["Juan Carlos Madrigal Alemán","570-120882-0001W",135,10],
+      ["Magdaleno Arauz Ortega","366-200563-0001M",135,10]
+    ]
+  },
+  "5kg": {
+    label: "5 kg", desc: "3 personas", defaultKg:1, defaultAporte:9,
+    roster: [
+      ["Yojana Maria Flores Barrios","570-300683-0000R",9,1],
+      ["Lenin Ernesto Gonzalez Morales","001-160277-0009G",18,2],
+      ["Leyla Suhey Amador Pilarte","366-310599-1000P",18,2]
+    ]
+  }
+};
+
+const apoState = {
+  fecha: "",
+  lugar: "Teustepe-Las Cañitas",
+  bookKey: null,
+  roster: [] // [{name, cedula, aporte, kg}]
+};
+
+function buildApoBookChoicesUI(){
+  const container = document.getElementById("apoBookChoices");
+  container.innerHTML = "";
+  Object.keys(APO_BOOKS).forEach(key=>{
+    const book = APO_BOOKS[key];
+    const card = document.createElement("div");
+    card.className = "book-card";
+    card.id = `apobook-${key}`;
+    card.innerHTML = `<div class="kg">${book.label}</div><div class="desc">${book.desc}</div>`;
+    card.addEventListener("click", ()=> selectApoBook(key));
+    container.appendChild(card);
+  });
+}
+
+async function selectApoBook(key){
+  apoState.bookKey = key;
+  Object.keys(APO_BOOKS).forEach(k=>{
+    document.getElementById(`apobook-${k}`).classList.toggle("selected", k===key);
+  });
+  let roster = null;
+  try{
+    const res = await window.storage.get(`aporte:roster:${key}`, false);
+    if(res && res.value) roster = JSON.parse(res.value);
+  }catch(e){ /* not found */ }
+  if(!roster){
+    roster = APO_BOOKS[key].roster.map(([name,cedula,aporte,kg])=>({name, cedula, aporte, kg}));
+  }
+  apoState.roster = roster;
+  renderApoRosterTable();
+  document.getElementById("apoRosterSection").style.display = "block";
+  document.getElementById("apoReportSection").style.display = "none";
+  document.getElementById("apoRosterSection").scrollIntoView({behavior:"smooth"});
+}
+
+function renderApoRosterTable(){
+  const tbody = document.getElementById("apoRosterBody");
+  tbody.innerHTML = "";
+  apoState.roster.forEach((p, idx)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${xmlEscape(p.name)}" data-idx="${idx}" data-f="name" class="apo-f"></td>
+      <td><input type="text" value="${xmlEscape(p.cedula||'')}" data-idx="${idx}" data-f="cedula" class="apo-f" style="width:150px;"></td>
+      <td><input type="number" value="${p.aporte}" min="0" step="1" data-idx="${idx}" data-f="aporte" class="apo-f" style="width:80px;"></td>
+      <td><input type="number" value="${p.kg}" min="0" step="0.5" data-idx="${idx}" data-f="kg" class="apo-f" style="width:70px;"></td>
+      <td><button class="rm-row" data-idx="${idx}" title="Quitar">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll(".apo-f").forEach(inp=>{
+    inp.addEventListener("input", (e)=>{
+      const idx = Number(e.target.dataset.idx);
+      const f = e.target.dataset.f;
+      apoState.roster[idx][f] = (f==="aporte"||f==="kg") ? (Number(e.target.value)||0) : e.target.value;
+      updateApoTotals();
+      saveApoRosterDraft();
+    });
+  });
+  tbody.querySelectorAll(".rm-row").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      apoState.roster.splice(Number(e.target.dataset.idx),1);
+      renderApoRosterTable();
+      updateApoTotals();
+      saveApoRosterDraft();
+    });
+  });
+  updateApoTotals();
+}
+
+function updateApoTotals(){
+  const totalAporte = apoState.roster.reduce((s,p)=>s+(Number(p.aporte)||0),0);
+  const totalKg = apoState.roster.reduce((s,p)=>s+(Number(p.kg)||0),0);
+  document.getElementById("apoTotalAporte").textContent = `C$${totalAporte}`;
+  document.getElementById("apoTotalKg").textContent = totalKg;
+}
+
+function saveApoRosterDraft(){
+  if(!apoState.bookKey) return;
+  storageSet(`aporte:roster:${apoState.bookKey}`, JSON.stringify(apoState.roster));
+}
+
+document.getElementById("apoAddRosterRowBtn").addEventListener("click", ()=>{
+  const book = APO_BOOKS[apoState.bookKey];
+  apoState.roster.push({name:"", cedula:"", aporte: book?book.defaultAporte:0, kg: book?book.defaultKg:0});
+  renderApoRosterTable();
+  saveApoRosterDraft();
+});
+
+document.getElementById("apoFechaInput").addEventListener("change", (e)=>{
+  apoState.fecha = e.target.value;
+  storageSet("aporte:fecha", apoState.fecha);
+});
+document.getElementById("apoLugarInput").addEventListener("input", (e)=>{
+  apoState.lugar = e.target.value;
+  storageSet("aporte:lugar", apoState.lugar);
+});
+
+document.getElementById("apoClearBtn").addEventListener("click", async ()=>{
+  if(!apoState.bookKey) return;
+  if(!confirm("¿Restablecer el listado a los valores originales de este libro?")) return;
+  apoState.roster = APO_BOOKS[apoState.bookKey].roster.map(([name,cedula,aporte,kg])=>({name, cedula, aporte, kg}));
+  renderApoRosterTable();
+  await storageDelete(`aporte:roster:${apoState.bookKey}`);
+});
+
+buildApoBookChoicesUI();
+
+(async function initApoFecha(){
+  try{
+    const f = await window.storage.get("aporte:fecha", false);
+    if(f && f.value){ apoState.fecha = f.value; document.getElementById("apoFechaInput").value = f.value; }
+  }catch(e){}
+  try{
+    const l = await window.storage.get("aporte:lugar", false);
+    if(l && l.value){ apoState.lugar = l.value; document.getElementById("apoLugarInput").value = l.value; }
+    else { document.getElementById("apoLugarInput").value = apoState.lugar; }
+  }catch(e){ document.getElementById("apoLugarInput").value = apoState.lugar; }
+})();
+
+function buildApoReportHTML(){
+  const fechaTxt = formatFechaDisplay(apoState.fecha);
+  const rowsHtml = apoState.roster.map((p,idx)=>`
+    <tr>
+      <td style="text-align:center;">${idx+1}</td>
+      <td>${xmlEscape(p.name)}</td>
+      <td>${xmlEscape(p.cedula||"")}</td>
+      <td style="text-align:right;">C$${p.aporte}</td>
+      <td style="text-align:right;">${p.kg}</td>
+      <td></td>
+    </tr>
+  `).join("");
+
+  return `
+    <div class="ahead">
+      <img src="data:image/png;base64,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" alt="Logo">
+      <div style="flex:1;">
+        <div class="t1">Fundación Banco de Alimentos de Nicaragua</div>
+        <div class="ahead2">${DON_LEGAL} · ${DON_RUC}</div>
+      </div>
+    </div>
+    <div class="ainfo">
+      <div class="left">${APO_DIRECTOR_BLOCK}<br><br>${APO_COLECTIVO_BLOCK}</div>
+      <div class="right">
+        <strong>Lugar</strong><br>${xmlEscape(apoState.lugar)}<br><br>
+        <strong>Fecha</strong><br>${fechaTxt}
+      </div>
+    </div>
+    <div class="aintro">${APO_INTRO}</div>
+    <table class="atable">
+      <thead><tr><th>N°</th><th>Nombre y apellido</th><th>Cédula</th><th>Aporte C$</th><th>Kg</th><th>Firma</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="afirma">FIRMA DEL DELEGADO DEL COLECTIVO</div>
+  `;
+}
+
+document.getElementById("apoGenerateBtn").addEventListener("click", ()=>{
+  if(apoState.roster.length===0){ alert("Agrega al menos una persona al listado."); return; }
+  const card = document.getElementById("apoReportCard");
+  card.innerHTML = buildApoReportHTML();
+  document.getElementById("apoReportSection").style.display = "block";
+  document.getElementById("apoReportSection").scrollIntoView({behavior:"smooth"});
+});
+
+document.getElementById("apoPrintBtn").addEventListener("click", ()=> window.print());
+
+/* ---------- Aporte XLSX ---------- */
+async function buildApoWorkbookBlob(){
+  const zip = new JSZip();
+  const n = apoState.roster.length;
+  const totalKg = apoState.roster.reduce((s,p)=>s+(Number(p.kg)||0),0);
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const coreXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title>Reporte de Aportes</dc:title>
+<dc:creator>App San Jose Obrero</dc:creator>
+</cp:coreProperties>`;
+
+  const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+<Application>App San Jose Obrero</Application>
+</Properties>`;
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="FIRMAS" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="6">
+<font><sz val="11"/><name val="Arial"/></font>
+<font><b/><sz val="15"/><name val="Arial"/></font>
+<font><sz val="9"/><name val="Arial"/></font>
+<font><b/><sz val="12"/><name val="Arial"/></font>
+<font><sz val="9"/><name val="Arial"/></font>
+<font><b/><sz val="10"/><name val="Arial"/></font>
+</fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2EEE2"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="9">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+</cellXfs>
+</styleSheet>`;
+
+  const rowDefs = [];
+  const merges = [];
+  let row = 1;
+
+  rowDefs.push({r:row, ht:26, cells:[inlineStrCell(`B${row}`,"Fundación Banco de Alimentos de Nicaragua",1)]});
+  merges.push(`B${row}:I${row}`);
+  row++;
+  rowDefs.push({r:row, ht:18, cells:[inlineStrCell(`A${row}`, `${DON_LEGAL}   ${DON_RUC}`, 2)]});
+  merges.push(`A${row}:I${row}`);
+  row++;
+
+  const infoRow = row;
+  rowDefs.push({r:infoRow, ht:70, cells:[
+    inlineStrCell(`A${infoRow}`, `${APO_DIRECTOR_BLOCK}\n\n${APO_COLECTIVO_BLOCK}`, 3),
+    inlineStrCell(`G${infoRow}`, `Lugar: ${apoState.lugar}\n\nFecha: ${formatFechaDisplay(apoState.fecha)}`, 3)
+  ]});
+  merges.push(`A${infoRow}:F${infoRow}`);
+  merges.push(`G${infoRow}:I${infoRow}`);
+  row++;
+
+  rowDefs.push({r:row, ht:32, cells:[inlineStrCell(`A${row}`, APO_INTRO, 8)]});
+  merges.push(`A${row}:I${row}`);
+  row++;
+
+  const headerRow = row;
+  rowDefs.push({r:headerRow, ht:18, cells:[
+    inlineStrCell(`A${headerRow}`,"N°",6),
+    inlineStrCell(`B${headerRow}`,"NOMBRE Y APELLIDO",6),
+    inlineStrCell(`E${headerRow}`,"CEDULA",6),
+    inlineStrCell(`G${headerRow}`,"APORTE C$",6),
+    inlineStrCell(`H${headerRow}`,"KG",6),
+    inlineStrCell(`I${headerRow}`,"FIRMA",6)
+  ]});
+  merges.push(`B${headerRow}:D${headerRow}`);
+  merges.push(`E${headerRow}:F${headerRow}`);
+  row++;
+
+  apoState.roster.forEach((p, idx)=>{
+    const r = row;
+    rowDefs.push({r, ht:16, cells:[
+      inlineStrCell(`A${r}`, String(idx+1), 5),
+      inlineStrCell(`B${r}`, p.name, 7),
+      inlineStrCell(`E${r}`, p.cedula||"", 5),
+      inlineStrCell(`G${r}`, String(p.aporte), 5),
+      inlineStrCell(`H${r}`, String(p.kg), 5),
+      inlineStrCell(`I${r}`, "", 7)
+    ]});
+    merges.push(`B${r}:D${r}`);
+    merges.push(`E${r}:F${r}`);
+    row++;
+  });
+
+  row++;
+  rowDefs.push({r:row, ht:18, cells:[inlineStrCell(`B${row}`,"FIRMA DEL DELEGADO DEL COLECTIVO",1)]});
+  merges.push(`B${row}:H${row}`);
+  const lastRow = row;
+
+  const colsXml = `<cols><col min="1" max="1" width="5" customWidth="1"/><col min="2" max="4" width="11" customWidth="1"/><col min="5" max="6" width="9" customWidth="1"/><col min="7" max="7" width="10" customWidth="1"/><col min="8" max="8" width="7" customWidth="1"/><col min="9" max="9" width="12" customWidth="1"/></cols>`;
+
+  const logoW=64, logoH=55;
+  const imageAnchors = [{col0:0, row0:0, cx:logoW*EMU_PER_PX, cy:logoH*EMU_PER_PX, blob:base64ToBytes(LOGO_BASE64), isLogo:true}];
+
+  const sheetRowsXml = rowDefs.map(rd=>`<row r="${rd.r}" ht="${rd.ht}" customHeight="1">${rd.cells.join("")}</row>`).join("");
+  const mergesXml = merges.map(m=>`<mergeCell ref="${m}"/>`).join("");
+
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<dimension ref="A1:I${lastRow}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+${colsXml}
+<sheetData>${sheetRowsXml}</sheetData>
+<mergeCells count="${merges.length}">${mergesXml}</mergeCells>
+<pageMargins left="0.3" right="0.3" top="0.3" bottom="0.3" header="0.2" footer="0.2"/>
+<pageSetup paperSize="1" fitToWidth="1" fitToHeight="0" orientation="portrait"/>
+<drawing r:id="rId1"/>
+</worksheet>`;
+
+  const sheetRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>`;
+
+  const drawingAnchorsXml = [];
+  const drawingRelsList = [];
+  imageAnchors.forEach((a, idx)=>{
+    const i = idx+1;
+    const rid = `rId${i}`;
+    drawingRelsList.push(`<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${i}.png"/>`);
+    drawingAnchorsXml.push(`<xdr:oneCellAnchor>
+<xdr:from><xdr:col>${a.col0}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${a.row0}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
+<xdr:ext cx="${Math.round(a.cx)}" cy="${Math.round(a.cy)}"/>
+<xdr:pic>
+<xdr:nvPicPr><xdr:cNvPr id="${i+1}" name="Picture ${i}"/><xdr:cNvPicPr/></xdr:nvPicPr>
+<xdr:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>
+<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${Math.round(a.cx)}" cy="${Math.round(a.cy)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>
+</xdr:pic>
+<xdr:clientData/>
+</xdr:oneCellAnchor>`);
+  });
+
+  const drawingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+${drawingAnchorsXml.join("")}
+</xdr:wsDr>`;
+
+  const drawingRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${drawingRelsList.join("")}
+</Relationships>`;
+
+  zip.file("[Content_Types].xml", contentTypes);
+  zip.file("_rels/.rels", rootRels);
+  zip.file("docProps/core.xml", coreXml);
+  zip.file("docProps/app.xml", appXml);
+  zip.file("xl/workbook.xml", workbookXml);
+  zip.file("xl/_rels/workbook.xml.rels", workbookRels);
+  zip.file("xl/styles.xml", stylesXml);
+  zip.file("xl/worksheets/sheet1.xml", sheetXml);
+  zip.file("xl/worksheets/_rels/sheet1.xml.rels", sheetRels);
+  zip.file("xl/drawings/drawing1.xml", drawingXml);
+  zip.file("xl/drawings/_rels/drawing1.xml.rels", drawingRelsXml);
+  imageAnchors.forEach((a, idx)=>{
+    zip.file(`xl/media/image${idx+1}.png`, a.blob);
+  });
+
+  return await zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+let lastApoBlob = null;
+async function getApoWorkbookBlobCached(){
+  lastApoBlob = await buildApoWorkbookBlob();
+  return lastApoBlob;
+}
+
+document.getElementById("apoDownloadXlsxBtn").addEventListener("click", async (e)=>{
+  const btn = e.currentTarget;
+  const original = btn.textContent;
+  btn.textContent = "Generando...";
+  btn.disabled = true;
+  try{
+    const blob = await getApoWorkbookBlobCached();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const fname = `Reporte_Aportes_${apoState.bookKey}_${apoState.fecha || "reporte"}.xlsx`;
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+
+async function shareApoWorkbook(){
+  const blob = await getApoWorkbookBlobCached();
+  const fname = `Reporte_Aportes_${apoState.bookKey}_${apoState.fecha || "reporte"}.xlsx`;
+  const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:"Reporte de Aportes", text:"Reporte de aportes - San José Obrero"});
+      return true;
+    }catch(err){ return false; }
+  }
+  return false;
+}
+
+document.getElementById("apoShareBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("apoShareNote");
+  const ok = await shareApoWorkbook();
+  if(!ok){
+    note.textContent = "Tu navegador no permite compartir archivos directamente. Descarga el Excel y compártelo desde tu gestor de archivos.";
+  }
+});
+
+document.getElementById("apoDriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("apoShareNote");
+  const shared = await shareApoWorkbook();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("apoDownloadXlsxBtn").click();
+    window.open("https://drive.google.com/drive/my-drive", "_blank");
+  }
+});
+
+document.getElementById("apoOnedriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("apoShareNote");
+  const shared = await shareApoWorkbook();
+  if(!shared){
+    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
+    document.getElementById("apoDownloadXlsxBtn").click();
+    window.open("https://onedrive.live.com/", "_blank");
+  }
+});
 
 </script>
 <script>
