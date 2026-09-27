@@ -1024,13 +1024,45 @@ async function buildWorkbookBlob(){
   const maxBoxWFull = 700, maxBoxHFull = 300;
   let curRow = 6;
   const imageAnchors = []; // {col0,row0,cx,cy,blob}
+  const rowBreaks = []; // row numbers where a page break should occur (for print)
 
   let si = 0;
   const logoW = 64, logoH = 55;
   imageAnchors.push({col0:0, row0:0, cx:logoW*EMU_PER_PX, cy:logoH*EMU_PER_PX, blob:base64ToBytes(LOGO_BASE64), isLogo:true});
   const slots = activeSlots();
+  const isAnimales = state.photoTipo === "animales";
+  let pairsSincePageHeader = 0; // para repetir encabezado cada 4 fotos (2 pares) en el libro de mascotas
+
+  function insertRepeatedHeader(){
+    // Repite el bloque de encabezado (logo, nombre, legal, título, colectivo/convenio, FECHA)
+    // Se usa solo para el libro de mascotas/animales, que en la plantilla original
+    // muestra el encabezado una vez por cada página de 4 fotos.
+    const r1 = curRow, r2 = curRow+1, r3 = curRow+2, r4 = curRow+3;
+    rowDefs.push({r:r1, ht:30, cells:[inlineStrCell(`A${r1}`, ORG_NAME, 1)]});
+    merges.push(`A${r1}:J${r1}`);
+    rowDefs.push({r:r2, ht:26, cells:[inlineStrCell(`A${r2}`, ORG_LEGAL, 3)]});
+    merges.push(`A${r2}:J${r2}`);
+    rowDefs.push({r:r3, ht:32, cells:[
+      inlineStrCell(`A${r3}`, `En nombre del Colectivo Familiar: ${COLECTIVO}   |   Numero de Convenio: ${CONVENIO}`, 2),
+      inlineStrCell(`G${r3}`, "FECHA", 2)
+    ]});
+    merges.push(`A${r3}:F${r3}`); merges.push(`G${r3}:J${r3}`);
+    rowDefs.push({r:r4, ht:18, cells:[inlineStrCell(`G${r4}`, formatFechaDisplay(state.fecha), 0)]});
+    merges.push(`G${r4}:J${r4}`);
+    imageAnchors.push({col0:0, row0:r1-1, cx:logoW*EMU_PER_PX, cy:logoH*EMU_PER_PX, blob:base64ToBytes(LOGO_BASE64)});
+    rowDefs.push({r:r4+1, ht:8, cells:[]});
+    curRow = r4+2;
+  }
+
   while(si < slots.length){
     const a = slots[si];
+
+    if(isAnimales && pairsSincePageHeader===2){
+      // marca salto de página antes de empezar la siguiente hoja de 4 fotos
+      rowBreaks.push(curRow-1);
+      insertRepeatedHeader();
+      pairsSincePageHeader = 0;
+    }
 
     if(a.fullWidth){
       const labelRow = curRow;
@@ -1087,12 +1119,16 @@ async function buildWorkbookBlob(){
     rowDefs.push({r:spacerRow, ht:6, cells:[]});
     curRow = spacerRow + 1;
     si += 2;
+    pairsSincePageHeader += 1;
   }
 
   const colsXml = `<cols><col min="1" max="1" width="3" customWidth="1"/><col min="2" max="5" width="10" customWidth="1"/><col min="6" max="6" width="3" customWidth="1"/><col min="7" max="10" width="10" customWidth="1"/></cols>`;
 
   const sheetRowsXml = rowDefs.map(rd=>`<row r="${rd.r}" ht="${rd.ht}" customHeight="1">${rd.cells.join("")}</row>`).join("");
   const mergesXml = merges.map(m=>`<mergeCell ref="${m}"/>`).join("");
+  const rowBreaksXml = rowBreaks.length
+    ? `<rowBreaks count="${rowBreaks.length}" manualBreakCount="${rowBreaks.length}">${rowBreaks.map(rb=>`<brk id="${rb}" max="9" man="1"/>`).join("")}</rowBreaks>`
+    : "";
 
   const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
@@ -1105,6 +1141,7 @@ ${colsXml}
 <mergeCells count="${merges.length}">${mergesXml}</mergeCells>
 <pageMargins left="0.3" right="0.3" top="0.3" bottom="0.3" header="0.2" footer="0.2"/>
 <pageSetup paperSize="1" fitToWidth="1" fitToHeight="0" orientation="portrait"/>
+${rowBreaksXml}
 <drawing r:id="rId1"/>
 </worksheet>`;
 
@@ -1335,22 +1372,16 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
 document.getElementById("driveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("shareNote");
-  const shared = await shareWorkbook();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("downloadXlsxBtn").click();
-    window.open("https://drive.google.com/drive/my-drive", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá Google Drive para que lo subas (botón 'Nuevo' → 'Subir archivo').";
+  document.getElementById("downloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://drive.google.com/drive/my-drive", "_blank"), 400);
 });
 
 document.getElementById("onedriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("shareNote");
-  const shared = await shareWorkbook();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("downloadXlsxBtn").click();
-    window.open("https://onedrive.live.com/", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá OneDrive para que lo subas (botón 'Cargar' → 'Archivos').";
+  document.getElementById("downloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://onedrive.live.com/", "_blank"), 400);
 });
 
 /* ===================== Restore draft from storage ===================== */
@@ -1967,22 +1998,16 @@ document.getElementById("donShareBtn").addEventListener("click", async ()=>{
 
 document.getElementById("donDriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("donShareNote");
-  const shared = await shareDonationWorkbook();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("donDownloadXlsxBtn").click();
-    window.open("https://drive.google.com/drive/my-drive", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá Google Drive para que lo subas (botón 'Nuevo' → 'Subir archivo').";
+  document.getElementById("donDownloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://drive.google.com/drive/my-drive", "_blank"), 400);
 });
 
 document.getElementById("donOnedriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("donShareNote");
-  const shared = await shareDonationWorkbook();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("donDownloadXlsxBtn").click();
-    window.open("https://onedrive.live.com/", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá OneDrive para que lo subas (botón 'Cargar' → 'Archivos').";
+  document.getElementById("donDownloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://onedrive.live.com/", "_blank"), 400);
 });
 
 /* =======================================================================
@@ -2397,22 +2422,16 @@ document.getElementById("solShareBtn").addEventListener("click", async ()=>{
 
 document.getElementById("solDriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("solShareNote");
-  const shared = await shareSolicitudDocx();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("solDownloadDocxBtn").click();
-    window.open("https://drive.google.com/drive/my-drive", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá Google Drive para que lo subas (botón 'Nuevo' → 'Subir archivo').";
+  document.getElementById("solDownloadDocxBtn").click();
+  setTimeout(()=>window.open("https://drive.google.com/drive/my-drive", "_blank"), 400);
 });
 
 document.getElementById("solOnedriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("solShareNote");
-  const shared = await shareSolicitudDocx();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("solDownloadDocxBtn").click();
-    window.open("https://onedrive.live.com/", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá OneDrive para que lo subas (botón 'Cargar' → 'Archivos').";
+  document.getElementById("solDownloadDocxBtn").click();
+  setTimeout(()=>window.open("https://onedrive.live.com/", "_blank"), 400);
 });
 
 /* =======================================================================
@@ -2907,22 +2926,16 @@ document.getElementById("apoShareBtn").addEventListener("click", async ()=>{
 
 document.getElementById("apoDriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("apoShareNote");
-  const shared = await shareApoWorkbook();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a Drive: se abrirá drive.google.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("apoDownloadXlsxBtn").click();
-    window.open("https://drive.google.com/drive/my-drive", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá Google Drive para que lo subas (botón 'Nuevo' → 'Subir archivo').";
+  document.getElementById("apoDownloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://drive.google.com/drive/my-drive", "_blank"), 400);
 });
 
 document.getElementById("apoOnedriveBtn").addEventListener("click", async ()=>{
   const note = document.getElementById("apoShareNote");
-  const shared = await shareApoWorkbook();
-  if(!shared){
-    note.textContent = "Descarga el archivo y súbelo a OneDrive: se abrirá onedrive.live.com en una pestaña nueva para que lo cargues.";
-    document.getElementById("apoDownloadXlsxBtn").click();
-    window.open("https://onedrive.live.com/", "_blank");
-  }
+  note.textContent = "Descargando el archivo… luego se abrirá OneDrive para que lo subas (botón 'Cargar' → 'Archivos').";
+  document.getElementById("apoDownloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://onedrive.live.com/", "_blank"), 400);
 });
 
 </script>
