@@ -80,11 +80,10 @@
 
   .slot{
     position:relative;border:1.5px dashed var(--line);border-radius:5px;background:var(--card);
-    aspect-ratio: 4/3; overflow:hidden; display:flex;align-items:center;justify-content:center;
-    cursor:pointer;transition:border-color .15s ease;
+    display:flex;flex-direction:column;overflow:hidden;
   }
-  .slot:hover{border-color:var(--ochre);}
   .slot.filled{border-style:solid;border-color:var(--teal);}
+  .slot .slot-inner{position:relative;aspect-ratio:4/3;overflow:hidden;display:flex;align-items:center;justify-content:center;}
   .slot img{width:100%;height:100%;object-fit:cover;display:block;}
   .slot .placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);padding:8px;text-align:center;}
   .slot .placeholder .num{font-family:"Courier New",monospace;font-size:0.75rem;color:var(--ochre);font-weight:700;}
@@ -98,6 +97,12 @@
     width:22px;height:22px;border-radius:50%;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
     z-index:3;
   }
+  .slot-sources{display:flex;flex-wrap:wrap;gap:3px;padding:5px;background:var(--card);border-top:1px solid var(--line);}
+  .slot-sources .src-btn{
+    flex:1 1 auto;min-width:0;font-size:0.62rem;padding:4px 3px;border:1px solid var(--line);border-radius:4px;
+    background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .slot-sources .src-btn:active{background:var(--card);}
   .slot input[type=file]{
     position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;
   }
@@ -780,8 +785,14 @@ function buildSlotEl(slot){
   div.className = "slot";
   div.id = `slot-${slot.id}`;
   div.innerHTML = `
-    <input type="file" accept="image/*" id="file-${slot.id}">
+    <input type="file" accept="image/*" id="file-${slot.id}" style="display:none;">
     <div class="slot-inner"></div>
+    <div class="slot-sources">
+      <button type="button" class="src-btn" data-src="device" data-id="${slot.id}">📁 Dispositivo</button>
+      <button type="button" class="src-btn" data-src="url" data-id="${slot.id}">🔗 URL</button>
+      <button type="button" class="src-btn" data-src="drive" data-id="${slot.id}">🟢 Drive</button>
+      <button type="button" class="src-btn" data-src="onedrive" data-id="${slot.id}">🔵 OneDrive</button>
+    </div>
   `;
   renderSlotContent(slot.id, div);
   const fileInput = div.querySelector(`#file-${slot.id}`);
@@ -794,9 +805,36 @@ function buildSlotEl(slot){
     updateProgress();
     storageSet(photoStorageKey(slot.id), result.dataURL);
   });
-  div.addEventListener("click", (e)=>{
-    if(e.target.classList.contains("remove")) return;
-    // El input cubre toda la casilla, así que el toque ya lo abre directamente.
+  div.querySelectorAll(".src-btn").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{
+      e.stopPropagation();
+      const src = btn.dataset.src;
+      if(src==="device"){
+        fileInput.click();
+      } else if(src==="url"){
+        const url = prompt("Pega la dirección (URL) directa de la imagen:\n(debe terminar en .jpg, .png, etc. y ser un enlace público — no una página, sino la imagen misma)");
+        if(!url) return;
+        try{
+          const resp = await fetch(url, {mode:"cors"});
+          if(!resp.ok) throw new Error("No se pudo descargar la imagen (" + resp.status + ")");
+          const blobRaw = await resp.blob();
+          const file = new File([blobRaw], "imagen.jpg", {type: blobRaw.type||"image/jpeg"});
+          const result = await resizeImageFile(file);
+          state.photos[slot.id] = result;
+          renderSlotContent(slot.id, div);
+          updateProgress();
+          storageSet(photoStorageKey(slot.id), result.dataURL);
+        }catch(err){
+          alert("No se pudo cargar esa imagen desde la URL. Muchos enlaces de Drive/OneDrive/redes sociales bloquean la descarga directa.\nDescarga la imagen a tu dispositivo y usa la opción 'Dispositivo'.\n\nDetalle: " + (err && err.message ? err.message : err));
+        }
+      } else if(src==="drive"){
+        alert("Se abrirá Google Drive en una pestaña nueva.\nBusca tu foto, descárgala a tu dispositivo (⋮ → Descargar) y luego usa el botón 'Dispositivo' aquí para seleccionarla.");
+        window.open("https://drive.google.com/drive/my-drive", "_blank");
+      } else if(src==="onedrive"){
+        alert("Se abrirá OneDrive en una pestaña nueva.\nBusca tu foto, descárgala a tu dispositivo y luego usa el botón 'Dispositivo' aquí para seleccionarla.");
+        window.open("https://onedrive.live.com/", "_blank");
+      }
+    });
   });
   return div;
 }
@@ -1258,6 +1296,8 @@ document.getElementById("downloadXlsxBtn").addEventListener("click", async (e)=>
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
   } finally {
     btn.textContent = original;
     btn.disabled = false;
@@ -1265,7 +1305,13 @@ document.getElementById("downloadXlsxBtn").addEventListener("click", async (e)=>
 });
 
 async function shareWorkbook(noteEl){
-  const blob = await getWorkbookBlobCached();
+  let blob;
+  try{
+    blob = await getWorkbookBlobCached();
+  }catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
+    return false;
+  }
   const fname = `Memoria_Fotografica_${state.fecha || "reporte"}.xlsx`;
   const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -1316,7 +1362,7 @@ async function restorePhotoDraft(){
   }
   for(const slot of activeSlots()){
     try{
-      const res = await window.storage.get(photoStorageKey(slot.id), false);
+      const res = await storageGet(photoStorageKey(slot.id));
       if(res && res.value){
         const dataURL = res.value;
         const dims = await getImageDims(dataURL);
@@ -1450,7 +1496,7 @@ async function selectBook(key){
   // try restore saved roster for this book, else use defaults
   let roster = null;
   try{
-    const res = await window.storage.get(`donacion:roster:${key}`, false);
+    const res = await storageGet(`donacion:roster:${key}`);
     if(res && res.value) roster = JSON.parse(res.value);
   }catch(e){ /* not found */ }
   if(!roster){
@@ -1460,7 +1506,7 @@ async function selectBook(key){
 
   let benef = null;
   try{
-    const res = await window.storage.get(`donacion:benef:${key}`, false);
+    const res = await storageGet(`donacion:benef:${key}`);
     if(res && res.value) benef = Number(res.value);
   }catch(e){ /* not found */ }
   donState.beneficiarios = (benef!==null && !isNaN(benef)) ? benef : DON_BOOKS[key].defaultBenef;
@@ -1884,6 +1930,8 @@ document.getElementById("donDownloadXlsxBtn").addEventListener("click", async (e
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
   } finally {
     btn.textContent = original;
     btn.disabled = false;
@@ -1891,7 +1939,13 @@ document.getElementById("donDownloadXlsxBtn").addEventListener("click", async (e
 });
 
 async function shareDonationWorkbook(){
-  const blob = await getDonationWorkbookBlobCached();
+  let blob;
+  try{
+    blob = await getDonationWorkbookBlobCached();
+  }catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
+    return false;
+  }
   const fname = `Informe_Donacion_${donState.bookKey}_${donState.fecha || "reporte"}.xlsx`;
   const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -2025,7 +2079,7 @@ async function selectTipo(key){
 
   // try restore draft
   try{
-    const res = await window.storage.get(`solicitud:draft:${key}`, false);
+    const res = await storageGet(`solicitud:draft:${key}`);
     if(res && res.value){
       const d = JSON.parse(res.value);
       Object.assign(solState, d);
@@ -2306,6 +2360,8 @@ document.getElementById("solDownloadDocxBtn").addEventListener("click", async (e
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } catch(err){
+    alert("No se pudo generar el Word: " + (err && err.message ? err.message : err));
   } finally {
     btn.textContent = original;
     btn.disabled = false;
@@ -2313,7 +2369,13 @@ document.getElementById("solDownloadDocxBtn").addEventListener("click", async (e
 });
 
 async function shareSolicitudDocx(){
-  const blob = await getSolicitudDocxBlobCached();
+  let blob;
+  try{
+    blob = await getSolicitudDocxBlobCached();
+  }catch(err){
+    alert("No se pudo generar el Word: " + (err && err.message ? err.message : err));
+    return false;
+  }
   const fname = `Solicitud_Donacion_${solState.tipo}_${solState.mes || "reporte"}.docx`;
   const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
   if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -2440,7 +2502,7 @@ async function selectApoBook(key){
   });
   let roster = null;
   try{
-    const res = await window.storage.get(`aporte:roster:${key}`, false);
+    const res = await storageGet(`aporte:roster:${key}`);
     if(res && res.value) roster = JSON.parse(res.value);
   }catch(e){ /* not found */ }
   if(!roster){
@@ -2527,11 +2589,11 @@ buildApoBookChoicesUI();
 
 (async function initApoFecha(){
   try{
-    const f = await window.storage.get("aporte:fecha", false);
+    const f = await storageGet("aporte:fecha");
     if(f && f.value){ apoState.fecha = f.value; document.getElementById("apoFechaInput").value = f.value; }
   }catch(e){}
   try{
-    const l = await window.storage.get("aporte:lugar", false);
+    const l = await storageGet("aporte:lugar");
     if(l && l.value){ apoState.lugar = l.value; document.getElementById("apoLugarInput").value = l.value; }
     else { document.getElementById("apoLugarInput").value = apoState.lugar; }
   }catch(e){ document.getElementById("apoLugarInput").value = apoState.lugar; }
@@ -2808,6 +2870,8 @@ document.getElementById("apoDownloadXlsxBtn").addEventListener("click", async (e
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
   } finally {
     btn.textContent = original;
     btn.disabled = false;
@@ -2815,7 +2879,13 @@ document.getElementById("apoDownloadXlsxBtn").addEventListener("click", async (e
 });
 
 async function shareApoWorkbook(){
-  const blob = await getApoWorkbookBlobCached();
+  let blob;
+  try{
+    blob = await getApoWorkbookBlobCached();
+  }catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
+    return false;
+  }
   const fname = `Reporte_Aportes_${apoState.bookKey}_${apoState.fecha || "reporte"}.xlsx`;
   const file = new File([blob], fname, {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   if(navigator.canShare && navigator.canShare({files:[file]})){
