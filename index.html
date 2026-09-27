@@ -160,6 +160,8 @@
     #solReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
     #apoReportSection, #apoReportSection *{visibility:visible;}
     #apoReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
+    #personasReportSection, #personasReportSection *{visibility:visible;}
+    #personasReportSection{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;}
     .result-actions,.note{display:none !important;}
     .report-card{border:none;box-shadow:none;max-width:100%;}
     .report-pair{break-inside:avoid;}
@@ -327,7 +329,20 @@
     </div>
     <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
       <button id="personasResetBtn" class="btn" style="border:1px solid var(--line);">Restaurar lista original</button>
+      <button class="btn btn-primary" id="personasGenerateBtn">Generar reporte para imprimir/compartir</button>
     </div>
+  </div>
+
+  <div id="personasReportSection" style="display:none;margin-top:36px;">
+    <div class="report-card personas-report" id="personasReportCard"></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="personasDownloadXlsxBtn">Descargar Excel (.xlsx)</button>
+      <button class="btn btn-ghost" id="personasPrintBtn">Imprimir / Guardar PDF</button>
+      <button class="btn btn-drive" id="personasDriveBtn">Guardar en Drive</button>
+      <button class="btn btn-onedrive" id="personasOnedriveBtn">Guardar en OneDrive</button>
+      <button class="btn btn-ghost" id="personasShareBtn">Compartir</button>
+    </div>
+    <p class="note" id="personasShareNote"></p>
   </div>
 </div>
 
@@ -696,6 +711,222 @@ document.getElementById("personasResetBtn").addEventListener("click", async ()=>
   renderPersonasTable();
 });
 
+/* ---------- Reporte imprimible / compartible de la base de datos de personal ---------- */
+function buildPersonasReportHTML(){
+  const list = getPersonasDB();
+  const rowsHtml = list.map((p,idx)=>`
+    <tr>
+      <td style="text-align:center;">${idx+1}</td>
+      <td>${xmlEscape(p.nombre||"")}</td>
+      <td style="text-align:center;">${xmlEscape(p.sexo||"")}</td>
+      <td>${xmlEscape(p.cedula||"")}</td>
+      <td>${xmlEscape(p.telefono||"")}</td>
+      <td>${xmlEscape(p.situacion||"")}</td>
+      <td>${xmlEscape(p.direccion||"")}</td>
+    </tr>
+  `).join("");
+  const fechaTxt = formatFechaDisplay(new Date().toISOString().slice(0,10));
+  return `
+    <div class="ahead">
+      <img src="data:image/png;base64,${LOGO_BASE64}" alt="Logo">
+      <div style="flex:1;">
+        <div class="t1">${ORG_NAME}</div>
+        <div class="ahead2">${ORG_LEGAL}</div>
+      </div>
+    </div>
+    <div class="ainfo">
+      <div class="left">Colectivo Familiar: ${COLECTIVO}<br>Numero de Convenio: ${CONVENIO}</div>
+      <div class="right"><strong>Fecha</strong><br>${fechaTxt}</div>
+    </div>
+    <div class="aintro">BASE DE DATOS DE PERSONAL — LISTA DE BENEFICIARIOS (${list.length} personas)</div>
+    <table class="atable">
+      <thead><tr><th>N°</th><th>Nombre</th><th>Sexo</th><th>Cédula</th><th>Teléfono</th><th>Situación</th><th>Dirección</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
+}
+
+document.getElementById("personasGenerateBtn").addEventListener("click", async ()=>{
+  await loadPersonasDB();
+  if(personasDB.length===0){ alert("No hay personas en la base de datos."); return; }
+  const card = document.getElementById("personasReportCard");
+  card.innerHTML = buildPersonasReportHTML();
+  document.getElementById("personasReportSection").style.display = "block";
+  document.getElementById("personasReportSection").scrollIntoView({behavior:"smooth"});
+});
+
+document.getElementById("personasPrintBtn").addEventListener("click", ()=> window.print());
+
+async function buildPersonasWorkbookBlob(){
+  const zip = new JSZip();
+  const list = getPersonasDB();
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="4">
+<font><sz val="10"/><name val="Arial"/></font>
+<font><b/><sz val="14"/><name val="Arial"/></font>
+<font><b/><sz val="10"/><name val="Arial"/></font>
+<font><sz val="9"/><name val="Arial"/></font>
+</fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2EEE2"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="5">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+</cellXfs>
+</styleSheet>`;
+
+  const rowDefs = [];
+  const merges = [];
+  let r = 1;
+
+  rowDefs.push({r:r, ht:30, cells:[inlineStrCell(`A${r}`, ORG_NAME, 1)]}); merges.push(`A${r}:G${r}`); r++;
+  rowDefs.push({r:r, ht:22, cells:[inlineStrCell(`A${r}`, ORG_LEGAL, 3)]}); merges.push(`A${r}:G${r}`); r++;
+  rowDefs.push({r:r, ht:24, cells:[inlineStrCell(`A${r}`, `BASE DE DATOS DE PERSONAL — Colectivo ${COLECTIVO}  |  Convenio ${CONVENIO}  |  Fecha: ${formatFechaDisplay(new Date().toISOString().slice(0,10))}`, 2)]}); merges.push(`A${r}:G${r}`); r++;
+  r++; // spacer
+
+  const headerRow = r;
+  rowDefs.push({r:headerRow, ht:20, cells:[
+    inlineStrCell(`A${headerRow}`, "N°", 4),
+    inlineStrCell(`B${headerRow}`, "Nombre", 4),
+    inlineStrCell(`C${headerRow}`, "Sexo", 4),
+    inlineStrCell(`D${headerRow}`, "Cédula", 4),
+    inlineStrCell(`E${headerRow}`, "Teléfono", 4),
+    inlineStrCell(`F${headerRow}`, "Situación", 4),
+    inlineStrCell(`G${headerRow}`, "Dirección", 4),
+  ]});
+  r++;
+
+  list.forEach((p, idx)=>{
+    rowDefs.push({r:r, ht:16, cells:[
+      inlineStrCell(`A${r}`, String(idx+1), 0),
+      inlineStrCell(`B${r}`, p.nombre||"", 0),
+      inlineStrCell(`C${r}`, p.sexo||"", 0),
+      inlineStrCell(`D${r}`, p.cedula||"", 0),
+      inlineStrCell(`E${r}`, p.telefono||"", 0),
+      inlineStrCell(`F${r}`, p.situacion||"", 0),
+      inlineStrCell(`G${r}`, p.direccion||"", 0),
+    ]});
+    r++;
+  });
+
+  const colsXml = `<cols><col min="1" max="1" width="5" customWidth="1"/><col min="2" max="2" width="28" customWidth="1"/><col min="3" max="3" width="7" customWidth="1"/><col min="4" max="4" width="18" customWidth="1"/><col min="5" max="5" width="14" customWidth="1"/><col min="6" max="6" width="22" customWidth="1"/><col min="7" max="7" width="34" customWidth="1"/></cols>`;
+  const sheetRowsXml = rowDefs.map(rd=>`<row r="${rd.r}" ht="${rd.ht}" customHeight="1">${rd.cells.join("")}</row>`).join("");
+  const mergesXml = merges.map(m=>`<mergeCell ref="${m}"/>`).join("");
+
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<dimension ref="A1:G${r}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+${colsXml}
+<sheetData>${sheetRowsXml}</sheetData>
+<mergeCells count="${merges.length}">${mergesXml}</mergeCells>
+<pageMargins left="0.3" right="0.3" top="0.3" bottom="0.3" header="0.2" footer="0.2"/>
+<pageSetup paperSize="1" fitToWidth="1" fitToHeight="0" orientation="landscape"/>
+</worksheet>`;
+
+  zip.file("[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`);
+  zip.file("_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`);
+  zip.file("xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Personal" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`);
+  zip.file("xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`);
+  zip.file("xl/styles.xml", stylesXml);
+  zip.file("xl/worksheets/sheet1.xml", sheetXml);
+
+  return zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+let lastPersonasBlob = null;
+async function getPersonasWorkbookBlobCached(){
+  lastPersonasBlob = await buildPersonasWorkbookBlob();
+  return lastPersonasBlob;
+}
+
+document.getElementById("personasDownloadXlsxBtn").addEventListener("click", async (e)=>{
+  const btn = e.currentTarget;
+  const original = btn.textContent;
+  btn.textContent = "Generando...";
+  btn.disabled = true;
+  try{
+    const blob = await getPersonasWorkbookBlobCached();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "Base_de_Datos_de_Personal.xlsx";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  } catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+
+async function sharePersonasWorkbook(){
+  let blob;
+  try{
+    blob = await getPersonasWorkbookBlobCached();
+  }catch(err){
+    alert("No se pudo generar el Excel: " + (err && err.message ? err.message : err));
+    return false;
+  }
+  const file = new File([blob], "Base_de_Datos_de_Personal.xlsx", {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:"Base de datos de personal", text:"Base de datos de personal - San José Obrero"});
+      return true;
+    }catch(err){ return false; }
+  }
+  return false;
+}
+
+document.getElementById("personasShareBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("personasShareNote");
+  const shared = await sharePersonasWorkbook();
+  if(!shared){
+    note.textContent = "Tu dispositivo no soporta compartir directo. Se descargó el archivo para que lo envíes manualmente.";
+    document.getElementById("personasDownloadXlsxBtn").click();
+  }
+});
+
+document.getElementById("personasDriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("personasShareNote");
+  note.textContent = "Descargando el archivo… luego se abrirá Google Drive para que lo subas (botón 'Nuevo' → 'Subir archivo').";
+  document.getElementById("personasDownloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://drive.google.com/drive/my-drive", "_blank"), 400);
+});
+
+document.getElementById("personasOnedriveBtn").addEventListener("click", async ()=>{
+  const note = document.getElementById("personasShareNote");
+  note.textContent = "Descargando el archivo… luego se abrirá OneDrive para que lo subas (botón 'Cargar' → 'Archivos').";
+  document.getElementById("personasDownloadXlsxBtn").click();
+  setTimeout(()=>window.open("https://onedrive.live.com/", "_blank"), 400);
+});
+
 
 const state = {
   fecha: "",
@@ -1020,8 +1251,17 @@ async function buildWorkbookBlob(){
   merges.push("G4:J4");
   rowDefs.push({r:5, ht:8, cells:[]});
 
-  const maxBoxW = 350, maxBoxH = 250;
-  const maxBoxWFull = 700, maxBoxHFull = 300;
+  /* Tamaños FIJOS de celda (en px), calculados a partir de la cuadrícula de columnas
+     de este reporte, conservando la proporción real de las plantillas originales:
+     el libro de personas usa celdas más cuadradas; el de mascotas usa celdas más
+     altas (verticales). Las fotos se RECORTAN para llenar esa celda exactamente,
+     sin dejar espacios en blanco y sin deformarse. */
+  const PAIR_BOX_W = 280;               // 4 columnas de ~70px (B:E o G:J)
+  const PERSONAS_PAIR_H = 301;          // proporción real ≈ 309:332
+  const PERSONAS_FULL_W = 560;          // 8 columnas (B:I)
+  const PERSONAS_FULL_H = 292;          // proporción real ≈ 636:332
+  const ANIMALES_PAIR_H = 370;          // proporción real ≈ 320:423 (celda más alta)
+
   let curRow = 6;
   const imageAnchors = []; // {col0,row0,cx,cy,blob}
   const rowBreaks = []; // row numbers where a page break should occur (for print)
@@ -1073,12 +1313,11 @@ async function buildWorkbookBlob(){
 
       const imgRow = labelRow + 1;
       const photo = state.photos[a.id];
-      const dim = containSize(photo, maxBoxWFull, maxBoxHFull);
-      const rowHeightPx = Math.max(dim.h, 40);
-      const rowHeightPt = Math.round(rowHeightPx * 0.75);
+      const rowHeightPt = Math.round(PERSONAS_FULL_H * 0.75);
       rowDefs.push({r:imgRow, ht:rowHeightPt, cells:[]});
       if(photo){
-        imageAnchors.push({col0:1, row0:imgRow-1, cx:dim.w*EMU_PER_PX, cy:dim.h*EMU_PER_PX, blob:photo.blob});
+        const cropped = await cropToBox(photo, PERSONAS_FULL_W, PERSONAS_FULL_H);
+        imageAnchors.push({col0:1, row0:imgRow-1, cx:PERSONAS_FULL_W*EMU_PER_PX, cy:PERSONAS_FULL_H*EMU_PER_PX, blob:cropped.blob});
       }
       const spacerRow = imgRow + 1;
       rowDefs.push({r:spacerRow, ht:6, cells:[]});
@@ -1101,18 +1340,17 @@ async function buildWorkbookBlob(){
     merges.push(`G${labelRow}:J${labelRow}`);
 
     const imgRow = labelRow + 1;
-    // compute contained sizes
-    const leftDim = containSize(leftPhoto, maxBoxW, maxBoxH);
-    const rightDim = containSize(rightPhoto, maxBoxW, maxBoxH);
-    const rowHeightPx = Math.max(leftDim.h, rightDim.h, 40);
-    const rowHeightPt = Math.round(rowHeightPx * 0.75);
+    const pairBoxH = isAnimales ? ANIMALES_PAIR_H : PERSONAS_PAIR_H;
+    const rowHeightPt = Math.round(pairBoxH * 0.75);
     rowDefs.push({r:imgRow, ht:rowHeightPt, cells:[]});
 
     if(leftPhoto){
-      imageAnchors.push({col0:1, row0:imgRow-1, cx:leftDim.w*EMU_PER_PX, cy:leftDim.h*EMU_PER_PX, blob:leftPhoto.blob});
+      const croppedLeft = await cropToBox(leftPhoto, PAIR_BOX_W, pairBoxH);
+      imageAnchors.push({col0:1, row0:imgRow-1, cx:PAIR_BOX_W*EMU_PER_PX, cy:pairBoxH*EMU_PER_PX, blob:croppedLeft.blob});
     }
     if(rightPhoto){
-      imageAnchors.push({col0:6, row0:imgRow-1, cx:rightDim.w*EMU_PER_PX, cy:rightDim.h*EMU_PER_PX, blob:rightPhoto.blob});
+      const croppedRight = await cropToBox(rightPhoto, PAIR_BOX_W, pairBoxH);
+      imageAnchors.push({col0:6, row0:imgRow-1, cx:PAIR_BOX_W*EMU_PER_PX, cy:pairBoxH*EMU_PER_PX, blob:croppedRight.blob});
     }
 
     const spacerRow = imgRow + 1;
@@ -1202,6 +1440,42 @@ function containSize(photo, maxW, maxH){
   if(!photo) return {w:0, h:0};
   const ratio = Math.min(maxW/photo.width, maxH/photo.height, 1);
   return {w: Math.round(photo.width*ratio), h: Math.round(photo.height*ratio)};
+}
+
+/* Recorta y rellena la foto al tamaño EXACTO de la celda (como en las plantillas
+   originales): centra el recorte según la proporción de la celda destino, sin
+   dejar espacios en blanco ni deformar la imagen. */
+function cropToBox(photo, targetW, targetH){
+  if(!photo) return Promise.resolve(null);
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const boxRatio = targetW / targetH;
+      const srcRatio = img.width / img.height;
+      let sx, sy, sw, sh;
+      if(srcRatio > boxRatio){
+        sh = img.height;
+        sw = sh * boxRatio;
+        sy = 0;
+        sx = (img.width - sw) / 2;
+      } else {
+        sw = img.width;
+        sh = sw / boxRatio;
+        sx = 0;
+        sy = (img.height - sh) / 2;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+      canvas.toBlob((blob)=>{
+        resolve({blob, w: targetW, h: targetH});
+      }, "image/jpeg", 0.85);
+    };
+    img.onerror = reject;
+    img.src = photo.dataURL;
+  });
 }
 
 /* ===================== Wire up UI ===================== */
