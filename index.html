@@ -112,6 +112,7 @@
   .btn-primary.choice-alt, #splash button.choice-alt{background:var(--wood);box-shadow:0 2px 0 #5C3A17;}
   .btn-primary.choice-solicitud, #splash button.choice-solicitud{background:#5B6E8C;box-shadow:0 2px 0 #3F4E66;}
   .btn-primary.choice-aporte, #splash button.choice-aporte{background:#8A4A5B;box-shadow:0 2px 0 #62333F;}
+  .btn-primary.choice-personas, #splash button.choice-personas{background:#3F6B4A;box-shadow:0 2px 0 #2A4A32;}
   .btn-ghost{background:transparent;color:var(--wood);border:1px solid var(--line);}
 
   /* ---------- Report preview ---------- */
@@ -290,6 +291,38 @@
       Reporte de aportes
       <span>Firmas y aportes en córdobas de jefes de familia</span>
     </button>
+    <button id="startPersonasBtn" class="btn btn-primary choice-btn choice-personas">
+      Base de datos de personal
+      <span>Editar, agregar o quitar beneficiarios usados en los formatos</span>
+    </button>
+  </div>
+</div>
+
+<div id="personasApp" class="wrap" style="display:none;">
+  <a href="#" id="backFromPersonas" class="back-link">← Volver al inicio</a>
+  <div class="top">
+    <div>
+      <h2>Base de datos de personal</h2>
+      <div class="org">Lista maestra de beneficiarios — se usa para llenar los formatos</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+      <input type="text" id="personasSearch" placeholder="Buscar por nombre o cédula…" style="flex:1;min-width:200px;padding:10px;border:1px solid var(--line);border-radius:6px;">
+      <button id="personasAddBtn" class="btn btn-primary" style="white-space:nowrap;">+ Agregar persona</button>
+    </div>
+    <div style="margin-top:10px;font-size:0.85rem;color:var(--muted);" id="personasCount"></div>
+    <div style="overflow-x:auto;margin-top:10px;">
+      <table class="roster-table" id="personasTable" style="width:100%;">
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Sexo</th><th>Cédula</th><th>Teléfono</th><th>Situación</th><th>Dirección</th><th></th></tr>
+        </thead>
+        <tbody id="personasBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button id="personasResetBtn" class="btn" style="border:1px solid var(--line);">Restaurar lista original</button>
+    </div>
   </div>
 </div>
 
@@ -564,22 +597,125 @@ function activeSlots(){ return state.photoTipo === "animales" ? SLOTS_ANIMALES :
 function activeGroupOrder(){ return state.photoTipo === "animales" ? GROUP_ORDER_ANIMALES : GROUP_ORDER_PERSONAS; }
 function photoStorageKey(id){ return `memoria:photo:${state.photoTipo}:${id}`; }
 
+
+/* ===================== Base de datos de personal (compartida) ===================== */
+const PERSONAS_SEED = [{"nombre": "Yojana Maria Flores Barrios", "sexo": "F", "cedula": "570-300683-0000R", "telefono": "8621-5307", "situacion": "Ama de casa, desempleada", "direccion": "Comarca Urbaite Iglesia Católica 100mts.Este 400mts. Sur"}, {"nombre": "Jefry Jaziel Arauz Velasquez", "sexo": "M", "cedula": "Tomo 10005, Folio 106", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "José Antonio Barrios Flores", "sexo": "M", "cedula": "570-110705-1002U", "telefono": "8518-9537", "situacion": "Dependiente, estudiante universitario", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "Diego Salvador Barrios Flores", "sexo": "M", "cedula": "570-251203-1001S", "telefono": "no tiene", "situacion": "Dependiente,  estudiante universitario", "direccion": "Comarca Urbaite Iglesia Católica 100mts.Este 400mts.EsteC"}, {"nombre": "Lenin Ernesto Gonzalez Morales", "sexo": "M", "cedula": "001-160277-0009G", "telefono": "8854-9101", "situacion": "Ing. Civil ,único sustento de la familia", "direccion": "Managua, Barrio Monseñor Lezcano de donde fue Telcor Douglas Mejia 1C. N. y 1 1/2C O."}, {"nombre": "Yadira Auxiliadora Gonzalez Garcia", "sexo": "F", "cedula": "Tomo 83 Folio 120", "telefono": "no tiene", "situacion": "Dependiente, estudiante de secundaria", "direccion": "Managua, Barrio Monseñor Lezcano de donde fue Telcor Douglas Mejia 1C. N. y 1 1/2C O."}, {"nombre": "Ariadna Esther marcia Garcia", "sexo": "F", "cedula": "Tomo 10025, Folio 65", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "Banpro 3 1/2 cuadras al oeste. Barrio el cementerio  Jinotepe Carazo"}, {"nombre": "Javier Jose Tinoco Leiva", "sexo": "M", "cedula": "Tomo 10395, Folio 97", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "Managua, Valle Verde Casa N° I57"}, {"nombre": "Mayden Kiyoe Tinoco Leiva", "sexo": "F", "cedula": "Tomo 1010255, Folio 48", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "Managua, Valle Verde Casa N° I57"}, {"nombre": "Liam Alessandro Reyes Saenz", "sexo": "M", "cedula": "Tomo 10043, Folio 218", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "Tipitapa- Managua del monumento de la Villa 1/2 C. al Este."}, {"nombre": "Leyla Suhey Amador Pilarte", "sexo": "F", "cedula": "366-310599-1000P", "telefono": "8384-5181", "situacion": "Profesora de preescolar y estudiantes", "direccion": "Comarca  Las Cañitas municipio de Teustepe"}, {"nombre": "Deykel Liben Amador Pilarte", "sexo": "F", "cedula": "361-061003-1002E", "telefono": "no tiene", "situacion": "Profesora de primaria", "direccion": "Comarca las Cañitas municipio de Teustepe"}, {"nombre": "Luis Yeral Pilarte Amador", "sexo": "M", "cedula": "Tomo 10006, Folio 60", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "Comarca  Las Cañitas municipio de Teustepe, del Centro de Salud 20mt Sur"}, {"nombre": "María Cristina Amador Pilarte", "sexo": "F", "cedula": "366-190696-0000Y", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "Comarca las Cañitas municipio de Teustepe"}, {"nombre": "Pedro Guadalupe Amador", "sexo": "M", "cedula": "Tomo 10008,  Folio 183", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "Comarca  Las Cañitas municipio de Teustepe, del Centro de Salud 20mt Sur"}, {"nombre": "Emir Gamaliel Flores Amador", "sexo": "M", "cedula": "Tomo 10009, Folio 78", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "Comarca  Las Cañitas municipio de Teustepe, del Centro de Salud 20mt Sur"}, {"nombre": "José Santos Amador Bermúdez", "sexo": "M", "cedula": "366-181058-0000E", "telefono": "no tiene", "situacion": "Adulto mayor, también trabaja en la agricultura", "direccion": "CMCA, Las Cañitas, Frente al Puesto de Salud."}, {"nombre": "Agripina Pilarte", "sexo": "F", "cedula": "366-230663-0002P", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "CMCA, Las Cañitas, Frente al Puesto de Salud."}, {"nombre": "Ismael Antonio Arauz Ramírez", "sexo": "M", "cedula": "366-191188-0000A", "telefono": "77891990", "situacion": "Agricultor y vendedor de recargas telefonicas", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Esmeralda Esther Ramírez", "sexo": "F", "cedula": "003-080690-0006B", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Israel Antonio Arauz Ramírez", "sexo": "M", "cedula": "12-12 2012", "telefono": "no tiene", "situacion": "Dependiente,  estudiante de secundaria", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Melquis Francisco Arauz Ramírez", "sexo": "M", "cedula": "Tomo 10005,Folio 238", "telefono": "no tiene", "situacion": "Dependiente lactante", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Magdaleno Arauz Ortega", "sexo": "M", "cedula": "366-200563-0001M", "telefono": "no tiene", "situacion": "Adulto mayor , vive de la agricultura", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Genaro Ramirez", "sexo": "M", "cedula": "1989-12-04 00:00:00", "telefono": "no tiene", "situacion": "Dependiente, Descapasitado", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Catalina Ramírez", "sexo": "F", "cedula": "366-130265-0000D", "telefono": "no tiene", "situacion": "Ama de Casa, Desempleada", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Julio José Arauz Ortega", "sexo": "M", "cedula": "366-190780-000H", "telefono": "8760-8986", "situacion": "Agricultor", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Agapita Bermúdez Bermúdez", "sexo": "F", "cedula": "366-150288-0001T", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Kattia Tatiana Diaz Bermudez", "sexo": "F", "cedula": "Tomo 10008, Folio 88", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Erick José Arauz Bermúdez", "sexo": "M", "cedula": "2009-03-23 00:00:00", "telefono": "no tiene", "situacion": "Dependiente,  estudiante de secundaria", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Emely Milagro Arauz Bermúdez", "sexo": "F", "cedula": "366010005 Folio 135", "telefono": "no tiene", "situacion": "Dependiente, estudiante de primaria", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Eleuterio Arauz Bermúdez", "sexo": "M", "cedula": "366-200237-0000V", "telefono": "no tiene", "situacion": "Dependiente, adulto mayor", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Kenner Alexander Luna Ramírez", "sexo": "M", "cedula": "Tomo 10002 Folio 25", "telefono": "no tiene", "situacion": "Dependiente,  lactante", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Maximimina Beatriz Arauz", "sexo": "F", "cedula": "366-181178-0000C", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "CMCA, Las Cañitas, Iglesia Catolica, 100 Sur"}, {"nombre": "Pedro Barahona Gonzalez", "sexo": "M", "cedula": "570-151294-0003R", "telefono": "no tiene", "situacion": "Comerciante de frutas y verduras", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "Blanca Azucena Condega Barrios", "sexo": "F", "cedula": "569-270893-0000B", "telefono": "8537-6134", "situacion": "Ama de casa, desempleada", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "Mónica María Condega Aguirre", "sexo": "F", "cedula": "Tomo 0091 Num  020", "telefono": "no tiene", "situacion": "Dependiente,  estudiante de primaria", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "Gabriela Yolanda Barahona Condega", "sexo": "F", "cedula": "Tomo 10009-folio 70", "telefono": "no tiene", "situacion": "Dependiente, lactante", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "Manuel Condega", "sexo": "M", "cedula": "570-271264-0000C", "telefono": "7622-0862", "situacion": "Agricultor", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "María Yolanda Barrios Carrillos", "sexo": "F", "cedula": "570-300758-0002L", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "Comarca Urbaite Iglesia católica 100mts. Este 400mts.Sur"}, {"nombre": "Ana Isabel Alvarez Romero", "sexo": "F", "cedula": "565-140755-0000D", "telefono": "no tiene", "situacion": "Ama de casa,  recibe pensión por enviudez", "direccion": "Km. 96 carretera panamericana sur. Barrio la reforma."}, {"nombre": "Matias Alonso Martinez Pedroza", "sexo": "M", "cedula": "Tomo 10005, Folio  32", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "Km. 96 carretera panamericana sur. Barrio la reforma."}, {"nombre": "Said José  Salinas  Alvarez", "sexo": "M", "cedula": "561-220106-10002S", "telefono": "no tiene", "situacion": "Operador, Ingenio de Rivas", "direccion": "Km. 96 carretera panamericana sur. Barrio la reforma."}, {"nombre": "Moisés Rafael Ortiz Pedroza", "sexo": "M", "cedula": "Tomo 0084 - Folio 308", "telefono": "no tiene", "situacion": "Dependiente, Estudiante", "direccion": "Km. 96 carretera panamericana sur. Barrio la reforma."}, {"nombre": "Imara Isabel Pineda Alvarez", "sexo": "F", "cedula": "561-301100-10001G", "telefono": "5730-3691", "situacion": "Enfemera, ENN (Ejercito Nacional Nicaragua)", "direccion": "Comarca Tierra Blanca Dpto.Rivas municipio de Potosí"}, {"nombre": "Elihanis Samira Pineda", "sexo": "F", "cedula": "Tomo 10007, Folio 21", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "Km. 96 carretera panamericana sur. Barrio la reforma."}, {"nombre": "Matías Alonso Martínez Pedroza", "sexo": "M", "cedula": "Tomo 10005 - Folio 32", "telefono": "no tiene", "situacion": "Dependiente, Estudiante", "direccion": "Km. 96 carretera panamericana sur. Barrio la reforma."}, {"nombre": "Lorenzo Antonio González Valerio", "sexo": "M", "cedula": "366-151079-0000J", "telefono": "89828349", "situacion": "Agricultor", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Bernabela del Carmen Flores Valerio", "sexo": "F", "cedula": "366-110678-0001E", "telefono": "no tiene", "situacion": "Ama de Casa", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Raúl Antonio González Flores", "sexo": "M", "cedula": "366-201200-1000R", "telefono": "82792288", "situacion": "Dependiente, estudiante universitario", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Josseling Yaneli González Flores", "sexo": "F", "cedula": "08-09-2011", "telefono": "no tiene", "situacion": "Dependiente, estudiante de Primaria", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Josua Jadid Flores Valerio", "sexo": "M", "cedula": "Tomo 10009, Folio 203", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Kenier Andres Jarquin Flores", "sexo": "M", "cedula": "Tomo 10003, Folio 113", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Kiara Alexandra Chavarria Valerio", "sexo": "F", "cedula": "Tomo 10000, Folio 130", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Sailin Dayanara Gonzalez Jarquin", "sexo": "F", "cedula": "Tomo 10047,Folio 144", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Kendra Franyeli Luna Zamora", "sexo": "F", "cedula": "Tomo 10003, Folio 190", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Samary Dannae Gonzalez Jarquin", "sexo": "F", "cedula": "Tomo 10086, Tomo 235", "telefono": "no tiene", "situacion": "Dependiente Lactante", "direccion": "CMCA.El Cacao de los Chavarrias Finca Las Lajitas"}, {"nombre": "Emeregilda Ramírez", "sexo": "F", "cedula": "366-200769-0002G", "telefono": "no tiene", "situacion": "Ama de casa, desempleada", "direccion": "CMCA, Las Cañitas"}, {"nombre": "Rafayla del Carmen Ortega Ramírez", "sexo": "F", "cedula": "366-241089-1000L", "telefono": "84700047", "situacion": "Ama de Casa,desempleada", "direccion": "CMCA, Las Cañitas"}, {"nombre": "Alexandra Valentina Bermudez Ortega", "sexo": "F", "cedula": "Tomo 10008,  Folio 196", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA, Las Cañitas"}, {"nombre": "Juan Carlos González Sequeira", "sexo": "M", "cedula": "366-190378-0001D", "telefono": "77685723", "situacion": "Agricultor", "direccion": "CMCA.La Laguna,Municio, Teustepe-Boaco, Iglesia Catolica 200 Oeste."}, {"nombre": "Marling Serrano", "sexo": "F", "cedula": "616-011180-0006J", "telefono": "83788856", "situacion": "Docente Primaria", "direccion": "CMCA.La Laguna,Municio, Teustepe-Boaco, Iglesia Catolica 200 Oeste."}, {"nombre": "Amílcar Johan González Serrano", "sexo": "M", "cedula": "Tomo 10003 - Folio 254", "telefono": "", "situacion": "Dependiente Estudiante", "direccion": "CMCA.La Laguna,Municio, Teustepe-Boaco, Iglesia Catolica 200 Oeste."}, {"nombre": "Ricardo Antonio López", "sexo": "M", "cedula": "001-210274-0038Q", "telefono": "", "situacion": "Mensajero Correos de Nicaragua", "direccion": "Bo Monseñor Lezcano Foto Luminton 10vrs al Norte"}, {"nombre": "María de la Concepción Jacamo Cortez", "sexo": "F", "cedula": "561-081285-0006W", "telefono": "no tiene", "situacion": "Ama de Casa,desempleada", "direccion": "Bo Monseñor Lezcano Foto Luminton 10vrs al Norte"}, {"nombre": "Justin Alexander Lopez Jacamo", "sexo": "M", "cedula": "Tomo 1010204, Folio 176", "telefono": "no tiene", "situacion": "Dependiente Descapacitado", "direccion": "Bo Monseñor Lezcano Foto Luminton 10vrs al Norte"}, {"nombre": "Yeison Antonio Garzo Ortiz", "sexo": "M", "cedula": "565-100292-0002N", "telefono": "86223728", "situacion": "Colaborador, Zona Franca", "direccion": "CMCA. La Reforma,km96 carr.panamerica, 200 vrs al Este."}, {"nombre": "Julysa del Carmen Álvarez", "sexo": "F", "cedula": "564-150483-0000R", "telefono": "86223728", "situacion": "Colaborador, Zona Franca", "direccion": "CMCA. La Reforma,km96 carr.panamerica, 200 vrs al Este."}, {"nombre": "Dylan Emir Garzo Álvarez", "sexo": "M", "cedula": "Tomo 10001 - Folio 22", "telefono": "no tiene", "situacion": "Dependiente, Estudiante", "direccion": "CMCA. La Reforma,km96 carr.panamerica, 200 vrs al Este."}, {"nombre": "Ervin Stiven Bojorge García", "sexo": "M", "cedula": "361-131103-1005H", "telefono": "89973501", "situacion": "CASUR, Ingenio Benjamin Zeledon", "direccion": "Tierras Blancas, km 96, Carr Panamericana, 300 vrs Este, 200 vrs.Norte, Rivas"}, {"nombre": "Wendy Karina Cano Morales", "sexo": "F", "cedula": "361-150206-1001H", "telefono": "89973501", "situacion": "Ama de Casa, Desempleada", "direccion": "Tierras Blancas, km 96, Carr Panamericana, 300 vrs Este, 200 vrs.Norte, Rivas"}, {"nombre": "Camily Nahaira Bojorge Cano", "sexo": "F", "cedula": "Tomo 10004 - Folio 148", "telefono": "no tiene", "situacion": "Dependiente Lacsante", "direccion": "Tierras Blancas, km 96, Carr Panamericana, 300 vrs Este, 200 vrs.Norte, Rivas"}, {"nombre": "Juan Carlos Madrigal Alemán", "sexo": "M", "cedula": "570-120882-0001W", "telefono": "85206628", "situacion": "Agricultor", "direccion": "CMCA,San Jose del Sur,Municipio Altagracia,Iglesia Las Cruces,200 N, Isla ometepe, Rivas."}, {"nombre": "Verónica Magdalena Condega Barrios", "sexo": "F", "cedula": "561-130989-0003N", "telefono": "85206628", "situacion": "Ama de casa,niñera", "direccion": "CMCA,San Jose del Sur,Municipio Altagracia,Iglesia Las Cruces,200 N, Isla ometepe, Rivas."}, {"nombre": "Samuel Antonio Madrigal Condega", "sexo": "M", "cedula": "Tomo 84 - Folio 92", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA,San Jose del Sur,Municipio Altagracia,Iglesia Las Cruces,200 N, Isla ometepe, Rivas."}, {"nombre": "Juan Manuel Madrigal Condega", "sexo": "M", "cedula": "Tomo 88 - Folio 14", "telefono": "no tiene", "situacion": "Dependiente Estudiante", "direccion": "CMCA,San Jose del Sur,Municipio Altagracia,Iglesia Las Cruces,200 N, Isla ometepe, Rivas."}, {"nombre": "CANTIDADES TOTALES", "sexo": "M", "cedula": "", "telefono": "", "situacion": "", "direccion": ""}, {"nombre": "Hombres", "sexo": "M", "cedula": "", "telefono": "", "situacion": "", "direccion": ""}, {"nombre": "Mujeres", "sexo": "M", "cedula": "", "telefono": "", "situacion": "", "direccion": ""}, {"nombre": "TOTAL", "sexo": "M", "cedula": "", "telefono": "", "situacion": "Firma Delegada:", "direccion": ""}, {"nombre": "Jefes de Hogar", "sexo": "M", "cedula": "", "telefono": "", "situacion": "Nombre Delagado:", "direccion": "=C4"}];
+
+let personasDB = null; // array en memoria, se carga de localStorage o del seed
+
+async function loadPersonasDB(){
+  if(personasDB) return personasDB;
+  const res = await storageGet("personas:db");
+  if(res && res.value){
+    try{ personasDB = JSON.parse(res.value); return personasDB; }catch(e){ /* fallthrough */ }
+  }
+  personasDB = PERSONAS_SEED.map(p=>({...p}));
+  await savePersonasDB();
+  return personasDB;
+}
+async function savePersonasDB(){
+  await storageSet("personas:db", JSON.stringify(personasDB));
+}
+function getPersonasDB(){ return personasDB || PERSONAS_SEED; }
+
+let personasFilter = "";
+async function renderPersonasTable(){
+  await loadPersonasDB();
+  const tbody = document.getElementById("personasBody");
+  const countEl = document.getElementById("personasCount");
+  tbody.innerHTML = "";
+  const q = personasFilter.trim().toLowerCase();
+  const list = personasDB.filter(p=>{
+    if(!q) return true;
+    return (p.nombre||"").toLowerCase().includes(q) || (p.cedula||"").toLowerCase().includes(q);
+  });
+  countEl.textContent = `${list.length} de ${personasDB.length} personas`;
+  list.forEach((p)=>{
+    const idx = personasDB.indexOf(p);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td><input data-idx="${idx}" data-field="nombre" value="${xmlEscapeAttr(p.nombre)}" style="width:180px;"></td>
+      <td>
+        <select data-idx="${idx}" data-field="sexo" style="width:60px;">
+          <option value="F" ${p.sexo==="F"?"selected":""}>F</option>
+          <option value="M" ${p.sexo==="M"?"selected":""}>M</option>
+        </select>
+      </td>
+      <td><input data-idx="${idx}" data-field="cedula" value="${xmlEscapeAttr(p.cedula)}" style="width:150px;"></td>
+      <td><input data-idx="${idx}" data-field="telefono" value="${xmlEscapeAttr(p.telefono)}" style="width:110px;"></td>
+      <td><input data-idx="${idx}" data-field="situacion" value="${xmlEscapeAttr(p.situacion)}" style="width:160px;"></td>
+      <td><input data-idx="${idx}" data-field="direccion" value="${xmlEscapeAttr(p.direccion)}" style="width:220px;"></td>
+      <td><button class="btn" data-del="${idx}" style="border:1px solid var(--line);color:#a33;">Quitar</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("input,select").forEach(inp=>{
+    inp.addEventListener("change", async (e)=>{
+      const idx = Number(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      personasDB[idx][field] = e.target.value;
+      await savePersonasDB();
+    });
+  });
+  tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{
+      const idx = Number(e.target.dataset.del);
+      const persona = personasDB[idx];
+      if(!confirm(`¿Quitar a "${persona.nombre}" de la base de datos?`)) return;
+      personasDB.splice(idx,1);
+      await savePersonasDB();
+      renderPersonasTable();
+    });
+  });
+}
+function xmlEscapeAttr(s){
+  return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+document.getElementById("personasSearch").addEventListener("input", (e)=>{
+  personasFilter = e.target.value;
+  renderPersonasTable();
+});
+document.getElementById("personasAddBtn").addEventListener("click", async ()=>{
+  await loadPersonasDB();
+  personasDB.unshift({nombre:"Nuevo beneficiario", sexo:"F", cedula:"", telefono:"", situacion:"", direccion:""});
+  await savePersonasDB();
+  personasFilter = "";
+  document.getElementById("personasSearch").value = "";
+  renderPersonasTable();
+});
+document.getElementById("personasResetBtn").addEventListener("click", async ()=>{
+  if(!confirm("Esto restaura la lista de personal a los 80 beneficiarios originales del archivo que enviaste. ¿Continuar?")) return;
+  personasDB = PERSONAS_SEED.map(p=>({...p}));
+  await savePersonasDB();
+  renderPersonasTable();
+});
+
+
 const state = {
   fecha: "",
   photoTipo: null, // "personas" | "animales"
   photos: {} // id -> {dataURL, width, height, blob}
 };
 
-/* ===================== Storage helpers (best-effort, non-blocking) ===================== */
+/* ===================== Storage helpers (real persistence via localStorage) ===================== */
+/* La app corre en GitHub Pages (no en el entorno de Claude), así que usamos
+   localStorage del navegador -- persiste de verdad entre sesiones en el mismo
+   dispositivo/navegador. Se mantiene la misma firma async para no tocar el
+   resto del código. */
+const LS_PREFIX = "sjo:";
 async function storageSet(key, value){
-  try{ if(window.storage) await window.storage.set(key, value, false); }catch(e){ /* ignore */ }
+  try{ localStorage.setItem(LS_PREFIX+key, value); }catch(e){ /* almacenamiento lleno o no disponible */ }
 }
 async function storageGet(key){
-  try{ if(window.storage) return await window.storage.get(key, false); }catch(e){ return null; }
-  return null;
+  try{
+    const v = localStorage.getItem(LS_PREFIX+key);
+    if(v===null) return null;
+    return { value: v };
+  }catch(e){ return null; }
 }
 async function storageDelete(key){
-  try{ if(window.storage) await window.storage.delete(key, false); }catch(e){ /* ignore */ }
+  try{ localStorage.removeItem(LS_PREFIX+key); }catch(e){ /* ignore */ }
 }
 
 /* ===================== Image processing ===================== */
@@ -1028,6 +1164,16 @@ document.getElementById("startAporteBtn").addEventListener("click", ()=>{
 document.getElementById("backFromAporte").addEventListener("click", (e)=>{
   e.preventDefault();
   document.getElementById("aporteApp").style.display = "none";
+  document.getElementById("splash").style.display = "flex";
+});
+document.getElementById("startPersonasBtn").addEventListener("click", ()=>{
+  document.getElementById("splash").style.display = "none";
+  document.getElementById("personasApp").style.display = "block";
+  renderPersonasTable();
+});
+document.getElementById("backFromPersonas").addEventListener("click", (e)=>{
+  e.preventDefault();
+  document.getElementById("personasApp").style.display = "none";
   document.getElementById("splash").style.display = "flex";
 });
 
