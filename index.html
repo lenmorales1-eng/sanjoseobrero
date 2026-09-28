@@ -11,7 +11,46 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="San José Obrero">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+/* ===================== Botones Correo y Microsoft Teams (todos los módulos) ===================== */
+const MAIL_TO = "flores.johanna30junio@gmail.com";
+const MAIL_CC = "lenmorales42@gmail.com";
+function addMailTeamsButtons(cfg){
+  const anchor = document.getElementById(cfg.afterBtnId);
+  const dl = document.getElementById(cfg.downloadBtnId);
+  const note = document.getElementById(cfg.noteId);
+  if(!anchor || !dl) return;
+  const mkBtn = (label, id)=>{
+    const b = document.createElement("button");
+    b.className = "btn btn-ghost"; b.id = id; b.textContent = label;
+    return b;
+  };
+  const mailBtn = mkBtn("Enviar por correo", cfg.prefix+"MailBtn");
+  const teamsBtn = mkBtn("Microsoft Teams", cfg.prefix+"TeamsBtn");
+  anchor.insertAdjacentElement("afterend", teamsBtn);
+  anchor.insertAdjacentElement("afterend", mailBtn);
+
+  mailBtn.addEventListener("click", ()=>{
+    if(note) note.textContent = "Se descargó el archivo. En el correo que se abrió, adjunta el archivo descargado y toca Enviar (ya van los destinatarios).";
+    dl.click();
+    const subject = encodeURIComponent(cfg.subject + " - " + COLECTIVO);
+    const body = encodeURIComponent("Adjunto el informe: " + cfg.subject + ".\nColectivo: " + COLECTIVO + " | Convenio: " + CONVENIO);
+    setTimeout(()=>{
+      window.location.href = `mailto:${MAIL_TO}?cc=${encodeURIComponent(MAIL_CC)}&subject=${subject}&body=${body}`;
+    }, 600);
+  });
+  teamsBtn.addEventListener("click", ()=>{
+    if(note) note.textContent = "Se descargó el archivo. En Microsoft Teams, abre el chat o canal y adjunta el archivo (clip). Destinatarios sugeridos: " + MAIL_TO + " y " + MAIL_CC + ".";
+    dl.click();
+    setTimeout(()=>window.open("https://teams.microsoft.com/", "_blank"), 400);
+  });
+}
+addMailTeamsButtons({prefix:"mem", afterBtnId:"onedriveBtn", downloadBtnId:"downloadXlsxBtn", noteId:"shareNote", subject:"Memoria Fotográfica"});
+addMailTeamsButtons({prefix:"don", afterBtnId:"donOnedriveBtn", downloadBtnId:"donDownloadXlsxBtn", noteId:"donShareNote", subject:"Informe de Donación"});
+addMailTeamsButtons({prefix:"sol", afterBtnId:"solOnedriveBtn", downloadBtnId:"solDownloadDocxBtn", noteId:"solShareNote", subject:"Solicitud de Donación"});
+addMailTeamsButtons({prefix:"apo", afterBtnId:"apoOnedriveBtn", downloadBtnId:"apoDownloadXlsxBtn", noteId:"apoShareNote", subject:"Reporte de Aportes"});
+addMailTeamsButtons({prefix:"personas", afterBtnId:"personasOnedriveBtn", downloadBtnId:"personasDownloadXlsxBtn", noteId:"personasShareNote", subject:"Base de Datos de Personal"});
+</script>
 <style>
   :root{
     --paper:#F6F1E4;
