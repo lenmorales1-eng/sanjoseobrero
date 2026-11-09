@@ -214,6 +214,10 @@ addMailTeamsButtons({prefix:"personas", afterBtnId:"personasOnedriveBtn", downlo
     .report-pair{break-inside:avoid;}
     .report-page{height:10.38in;aspect-ratio:auto;width:7.9in;}
     #donReportCard{width:7.6in;margin-left:auto;margin-right:auto;}
+    #solReportCard{width:6.14in;margin:0.7in auto 0;padding:0;font-size:11pt;line-height:1.25;text-align:justify;}
+    #solReportCard .shead{text-align:right;border-bottom:none;font-size:11pt;}
+    #solReportCard .sfecha{text-align:right;}
+    #solReportCard .snote{font-size:10pt;}
   }
   .back-link{display:inline-block;margin-bottom:14px;color:var(--wood);font-size:0.85rem;text-decoration:none;font-weight:600;}
   .back-link:hover{text-decoration:underline;}
@@ -2358,8 +2362,16 @@ function restoreAfterPrint(){
   _npHidden.forEach(([e,v])=>{ e.style.removeProperty("display"); if(v) e.style.display=v; });
   _npHidden = [];
   const c=document.getElementById("donReportCard"); if(c){ c.style.zoom=""; c.style.width=""; }
+  const sc=document.getElementById("solReportCard"); if(sc) sc.style.zoom="";
 }
-window.addEventListener("beforeprint", ()=>{ isolateReportForPrint(); fitDonForPrint(); });
+function fitSolForPrint(){
+  const c = document.getElementById("solReportCard"); if(!c || !c.firstElementChild) return;
+  const s = document.getElementById("solReportSection"); if(!s || s.style.display!=="block") return;
+  c.style.zoom = "";
+  const maxH = 9.3*96, h = c.getBoundingClientRect().height;
+  if(h > maxH) c.style.zoom = String(Math.floor(maxH/h*1000)/1000);
+}
+window.addEventListener("beforeprint", ()=>{ isolateReportForPrint(); fitDonForPrint(); fitSolForPrint(); });
 window.addEventListener("afterprint", restoreAfterPrint);
 document.getElementById("donPrintBtn").addEventListener("click", ()=> window.print());
 
@@ -2800,7 +2812,7 @@ function buildSolicitudReportHTML(){
   return `
     <div class="shead">${headHtml}</div>
     <div class="sfecha">${xmlEscape(fechaTxt)}</div>
-    <p>Sr. Edgard Mendieta.<br>Director Ejecutivo<br>Banco de Alimentos de Nicaragua</p>
+    <p><b>Sr. Edgard Mendieta.</b><br>Director Ejecutivo<br>Banco de Alimentos de Nicaragua</p>
     <p>Estimado señor;</p>
     <p>${xmlEscape(par1)}</p>
     <p>${xmlEscape(par2)}</p>
@@ -3037,8 +3049,9 @@ function wp(text, opts){
   else if(opts.spacingAfter !== undefined) ppr += `<w:spacing w:after="${opts.spacingAfter}"/>`;
   if(opts.align) ppr += `<w:jc w:val="${opts.align}"/>`;
   let rprPiece = "";
-  if(opts.italic || opts.size){
+  if(opts.italic || opts.size || opts.bold){
     rprPiece = "<w:rPr>";
+    if(opts.bold) rprPiece += "<w:b/>";
     if(opts.italic) rprPiece += "<w:i/>";
     if(opts.size) rprPiece += `<w:sz w:val="${opts.size}"/><w:szCs w:val="${opts.size}"/>`;
     rprPiece += "</w:rPr>";
@@ -3100,7 +3113,7 @@ async function buildSolicitudDocxBlob(){
 </w:styles>`;
 
   const cfg = SOL_TIPOS[solState.tipo] || SOL_TIPOS.personas;
-  const headerParas = cfg.headerLines.map(l=>wp(l, {align:"right", size:18})).join("");
+  const headerParas = cfg.headerLines.map(l=>wp(l, {align:"right"})).join("");
   const headerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 ${headerParas}
@@ -3108,7 +3121,7 @@ ${headerParas}
 
   const footerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-${wp(SOL_NOTA, {italic:true, size:16, align:"both"})}
+${wp(SOL_NOTA, {italic:true, size:20, align:"both"})}
 </w:ftr>`;
 
   const [par1, par2, par3] = buildSolicitudParagraphs(cfg);
@@ -3117,31 +3130,31 @@ ${wp(SOL_NOTA, {italic:true, size:16, align:"both"})}
   const bodyParas = [
     wp(solFechaDisplay(), {align:"right"}),
     wp(),
-    wp("Sr. Edgard Mendieta."),
-    wp("Director Ejecutivo"),
-    wp("Banco de Alimentos de Nicaragua"),
+    wp("Sr. Edgard Mendieta.", {align:"both", bold:true}),
+    wp("Director Ejecutivo", {align:"both"}),
+    wp("Banco de Alimentos de Nicaragua", {align:"both"}),
     wp(),
-    wp("Estimado señor;"),
+    wp("Estimado señor;", {align:"both"}),
     wp(),
-    wp(par1),
+    wp(par1, {align:"both"}),
     wp(),
-    wp(par2),
+    wp(par2, {align:"both"}),
     wp(),
-    wp(par3),
+    wp(par3, {align:"both"}),
     wp(),
-    wp("Agradeciendo su respuesta a mi solicitud, le saludo."),
+    wp("Agradeciendo su respuesta a mi solicitud, le saludo.", {align:"both"}),
     wp(),
-    wp("Atentamente,", {keepNext:true}),
+    wp("Atentamente,", {keepNext:true, align:"both"}),
     ...firmaParas,
     wp(),
-    wp("CC. solicitante"),
+    wp("CC. solicitante", {align:"both"}),
   ].join("");
 
   const sectPr = '<w:sectPr>'
     + '<w:headerReference w:type="default" r:id="rId2"/>'
     + '<w:footerReference w:type="default" r:id="rId3"/>'
     + '<w:pgSz w:w="12240" w:h="15840"/>'
-    + '<w:pgMar w:top="1531" w:right="1304" w:bottom="2041" w:left="1304" w:header="567" w:footer="454" w:gutter="0"/>'
+    + '<w:pgMar w:top="1417" w:right="1701" w:bottom="1417" w:left="1701" w:header="708" w:footer="708" w:gutter="0"/><w:cols w:space="708"/>'
     + '</w:sectPr>';
 
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
