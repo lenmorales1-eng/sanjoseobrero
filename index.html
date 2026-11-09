@@ -214,6 +214,8 @@ addMailTeamsButtons({prefix:"personas", afterBtnId:"personasOnedriveBtn", downlo
     .report-pair{break-inside:avoid;}
     .report-page{height:10.38in;aspect-ratio:auto;width:7.9in;}
     #donReportCard{width:7.6in;margin-left:auto;margin-right:auto;}
+    #donReportSection,#solReportSection,#apoReportSection,#reportSection,#personasReportSection{margin-top:0 !important;}
+    #apoReportCard{width:7.6in;margin:0 auto;padding:0;}
     #solReportCard{width:6.14in;margin:0.7in auto 0;padding:0;font-size:11pt;line-height:1.25;text-align:justify;}
     #solReportCard .shead{text-align:right;border-bottom:none;font-size:11pt;}
     #solReportCard .sfecha{text-align:right;}
@@ -299,18 +301,24 @@ addMailTeamsButtons({prefix:"personas", afterBtnId:"personasOnedriveBtn", downlo
 
   /* ---------- Aporte report preview ---------- */
   .apo-report{font-size:0.82rem;line-height:1.5;}
-  .apo-report .ahead{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:10px;}
+  .apo-report .abox{border:1px solid var(--ink);display:flex;flex-direction:column;min-height:10.1in;}
+  .apo-report .ahead{display:flex;align-items:center;gap:12px;padding:6px 8px;}
   .apo-report .ahead img{width:52px;height:auto;flex:none;}
-  .apo-report .ahead .t1{font-weight:700;font-size:1.1rem;text-align:center;flex:1;}
-  .apo-report .ahead2{text-align:center;font-size:0.72rem;color:var(--muted);margin-top:4px;}
-  .apo-report .ainfo{margin-top:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-  .apo-report .ainfo .left{flex:1;min-width:220px;}
-  .apo-report .ainfo .right{text-align:right;font-size:0.82rem;}
-  .apo-report .aintro{margin-top:14px;font-weight:600;}
-  .apo-report table.atable{width:100%;border-collapse:collapse;margin-top:12px;font-size:0.76rem;}
-  .apo-report table.atable th{border:1px solid var(--ink);background:#F2EEE2;padding:5px;font-size:0.72rem;}
-  .apo-report table.atable td{border:1px solid var(--ink);padding:4px 6px;}
-  .apo-report .afirma{margin-top:34px;text-align:center;font-weight:700;}
+  .apo-report .aht{flex:1;text-align:center;font-weight:700;}
+  .apo-report .aht .t1{font-size:1.05rem;margin-bottom:8px;}
+  .apo-report .aht .t2{font-size:0.82rem;}
+  .apo-report .arow{display:flex;border-top:1px solid var(--ink);}
+  .apo-report .arow .al{flex:1;padding:3px 8px;font-size:0.78rem;line-height:1.35;}
+  .apo-report .arow .ar{width:27%;border-left:1px solid var(--ink);text-align:center;display:flex;flex-direction:column;}
+  .apo-report .ar .rh{font-weight:700;font-size:0.9rem;padding:3px 0;}
+  .apo-report .ar .rv{font-weight:700;font-size:0.8rem;flex:1;display:flex;align-items:center;justify-content:center;}
+  .apo-report .aintro{border-top:1px solid var(--ink);padding:3px 8px;font-weight:700;font-size:0.72rem;line-height:1.3;}
+  .apo-report table.atable{width:100%;border-collapse:collapse;font-size:0.8rem;}
+  .apo-report table.atable th{border:1px solid var(--ink);padding:2px 4px;font-size:0.72rem;text-decoration:underline;}
+  .apo-report table.atable td{border:1px solid var(--ink);padding:0 6px;height:0.3in;font-size:0.8rem;}
+  .apo-report table.atable td.c{text-align:center;font-weight:700;white-space:nowrap;}
+  .apo-report .afirma{margin-top:auto;padding:30px 0 8px;text-align:center;}
+  .apo-report .afirma .line{width:260px;margin:0 auto;border-top:1px solid var(--ink);padding-top:2px;font-size:0.78rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -2363,6 +2371,7 @@ function restoreAfterPrint(){
   _npHidden = [];
   const c=document.getElementById("donReportCard"); if(c){ c.style.zoom=""; c.style.width=""; }
   const sc=document.getElementById("solReportCard"); if(sc) sc.style.zoom="";
+  const ac=document.getElementById("apoReportCard"); if(ac) ac.style.zoom="";
 }
 function fitSolForPrint(){
   const c = document.getElementById("solReportCard"); if(!c || !c.firstElementChild) return;
@@ -2371,7 +2380,14 @@ function fitSolForPrint(){
   const maxH = 9.3*96, h = c.getBoundingClientRect().height;
   if(h > maxH) c.style.zoom = String(Math.floor(maxH/h*1000)/1000);
 }
-window.addEventListener("beforeprint", ()=>{ isolateReportForPrint(); fitDonForPrint(); fitSolForPrint(); });
+function fitApoForPrint(){
+  const c = document.getElementById("apoReportCard"); const s = document.getElementById("apoReportSection");
+  if(!c || !s || s.style.display!=="block") return;
+  c.style.zoom = "";
+  const maxH = 10.2*96, h = c.getBoundingClientRect().height;
+  if(h > maxH) c.style.zoom = String(Math.floor(maxH/h*1000)/1000);
+}
+window.addEventListener("beforeprint", ()=>{ isolateReportForPrint(); fitDonForPrint(); fitSolForPrint(); fitApoForPrint(); });
 window.addEventListener("afterprint", restoreAfterPrint);
 document.getElementById("donPrintBtn").addEventListener("click", ()=> window.print());
 
@@ -3431,37 +3447,37 @@ function buildApoReportHTML(){
   const fechaTxt = formatFechaDisplay(apoState.fecha);
   const rowsHtml = apoState.roster.map((p,idx)=>`
     <tr>
-      <td style="text-align:center;">${idx+1}</td>
+      <td class="c">${idx+1}</td>
       <td>${xmlEscape(p.name)}</td>
-      <td>${xmlEscape(p.cedula||"")}</td>
-      <td style="text-align:right;">C$${p.aporte}</td>
-      <td style="text-align:right;">${p.kg}</td>
+      <td class="c">${xmlEscape(p.cedula||"")}</td>
+      <td class="c">${p.aporte}</td>
+      <td class="c">${p.kg}</td>
       <td></td>
     </tr>
   `).join("");
-
-  return `
+  return `<div class="abox">
     <div class="ahead">
       <img src="data:image/png;base64,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" alt="Logo">
-      <div style="flex:1;">
+      <div class="aht">
         <div class="t1">Fundación Banco de Alimentos de Nicaragua</div>
-        <div class="ahead2">${DON_LEGAL} · ${DON_RUC}</div>
+        <div class="t2">${DON_LEGAL} N°RUC${DON_RUC.replace("N° RUC","").trim()}</div>
       </div>
     </div>
-    <div class="ainfo">
-      <div class="left">${APO_DIRECTOR_BLOCK}<br><br>${APO_COLECTIVO_BLOCK}</div>
-      <div class="right">
-        <strong>Lugar</strong><br>${xmlEscape(apoState.lugar)}<br><br>
-        <strong>Fecha</strong><br>${fechaTxt}
-      </div>
+    <div class="arow">
+      <div class="al"><b>Estimado</b><br><b>Lic. Edgar Mendieta.</b><br><b>Director Ejecutivo.</b><br><b>Fundacion Banco de Alimentos de Nicaragua.</b></div>
+      <div class="ar"><div class="rh">Lugar.</div><div class="rv">${xmlEscape(apoState.lugar)}</div></div>
+    </div>
+    <div class="arow">
+      <div class="al"><b>En nombre del Colectivo Familiar: San Jose Obrero<br>Numero de Convenio: ${CONVENIO}<br>Nombre del Representante del Colectivo: Yojana María Flores Barrios<br>Numero de Cedula: 570-300683-0000R<br>Telefono: 86215307</b></div>
+      <div class="ar"><div class="rh">Fecha.</div><div class="rv">${fechaTxt}</div></div>
     </div>
     <div class="aintro">${APO_INTRO}</div>
     <table class="atable">
-      <thead><tr><th>N°</th><th>Nombre y apellido</th><th>Cédula</th><th>Aporte C$</th><th>Kg</th><th>Firma</th></tr></thead>
+      <thead><tr><th style="width:5%">N°</th><th style="width:31%">NOMBRE Y APELLIDO</th><th style="width:21%">CEDULA</th><th style="width:11%">APORTE C$</th><th style="width:6%">KG</th><th>FIRMA</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
-    <div class="afirma">FIRMA DEL DELEGADO DEL COLECTIVO</div>
-  `;
+    <div class="afirma"><div class="line">FIRMA DEL DELEGADO DEL COLECTIVO</div></div>
+  </div>`;
 }
 
 document.getElementById("apoGenerateBtn").addEventListener("click", ()=>{
